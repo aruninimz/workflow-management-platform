@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestones - FlowBit</title>
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/milestones.css">
+    <link rel="stylesheet" href="../../assets/css/goals.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">≋</div>
+            <span>FlowBit</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="../dashboard/dashboard.html" class="nav-item">
+                <span class="icon">▦</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="../goals/goals.html" class="nav-item">
+                <span class="icon">⚑</span>
+                <span>Goals</span>
+            </a>
+            <a href="../milestones/milestones.html" class="nav-item active">
+                <span class="icon">◉</span>
+                <span>Milestones</span>
+            </a>
+            <a href="../tasks/tasks.html" class="nav-item">
+                <span class="icon">☰</span>
+                <span>Tasks</span>
+            </a>
+            <a href="../risk-engine/risk-engine.html" class="nav-item">
+                <span class="icon">⚠</span>
+                <span>Risk Engine</span>
+            </a>
+            <a href="../insights/insights.html" class="nav-item">
+                <span class="icon">◐</span>
+                <span>Insights</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatarSmall">JD</div>
+                <div class="user-info">
+                    <div class="user-name-small" id="userNameSmall">John Doe</div>
+                    <div class="user-role">Project Manager</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <span class="icon">→</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search..." id="searchInput">
+                </div>
+                <div class="notification-bell">
+                    🔔
+                    <span class="badge">3</span>
+                </div>
+                <button class="theme-toggle">⚙️</button>
+                <div class="user-avatar" id="userAvatar">JD</div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <div class="page-title">
+                    <h1>Milestones</h1>
+                </div>
+                <div class="page-actions">
+                    <button class="btn-primary" onclick="openAddMilestoneModal()">+ New Milestone</button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters-row">
+                <select class="filter-select" id="scopeFilter" onchange="filterMilestones()">
+                    <option value="all">All Milestones</option>
+                    <option value="my">My Milestones</option>
+                </select>
+                <select class="filter-select" id="goalFilter" onchange="filterMilestones()">
+                    <option value="all">All Goals</option>
+                    <!-- Goals will be loaded dynamically -->
+                </select>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state" style="display: flex;">
+                <div class="spinner"></div>
+                <p>Loading milestones...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📋</div>
+                <h3>No milestones yet</h3>
+                <p>Create your first milestone to track progress towards your goals.</p>
+                <button class="btn-primary" onclick="openAddMilestoneModal()">
+                    <span class="icon">+</span>
+                    Create Milestone
+                </button>
+            </div>
+
+            <!-- Milestones Container -->
+            <div id="milestonesContainer" class="milestones-container" style="display: none;">
+                <!-- Milestones will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+
+
+
+</body>
+
+</html>
