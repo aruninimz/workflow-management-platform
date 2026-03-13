@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone Details - FlowBit</title>
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/goals.css">
+    <link rel="stylesheet" href="../../assets/css/milestones.css">
+    <link rel="stylesheet" href="../../assets/css/milestone-detail.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">≋</div>
+            <span>FlowBit</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="../dashboard/dashboard.html" class="nav-item">
+                <span class="icon">▦</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="../goals/goals.html" class="nav-item">
+                <span class="icon">⚑</span>
+                <span>Goals</span>
+            </a>
+            <a href="../milestones/milestones.html" class="nav-item active">
+                <span class="icon">◉</span>
+                <span>Milestones</span>
+            </a>
+            <a href="../tasks/tasks.html" class="nav-item">
+                <span class="icon">☰</span>
+                <span>Tasks</span>
+            </a>
+            <a href="../risk-engine/risk-engine.html" class="nav-item">
+                <span class="icon">⚠</span>
+                <span>Risk Engine</span>
+            </a>
+            <a href="../insights/insights.html" class="nav-item">
+                <span class="icon">◐</span>
+                <span>Insights</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatarSmall">JD</div>
+                <div class="user-info">
+                    <div class="user-name-small" id="userNameSmall">John Doe</div>
+                    <div class="user-role">Project Manager</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <span class="icon">→</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search..." id="searchInput">
+                </div>
+                <div class="notification-bell">
+                    🔔
+                    <span class="badge">3</span>
+                </div>
+                <button class="theme-toggle">⚙️</button>
+                <div class="user-avatar" id="userAvatar">JD</div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Back Button -->
+            <div class="back-button-container">
+                <a href="../milestones/milestones.html" class="back-button">
+                    <span class="icon">←</span>
+                    Back to Milestones
+                </a>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state" style="display: flex;">
+                <div class="spinner"></div>
+                <p>Loading milestone details...</p>
+            </div>
+
+            <!-- Milestone Detail Content -->
+            <div id="milestoneDetailContent" style="display: none;">
+                <!-- Milestone Header Card -->
+                <div class="detail-header-card">
+                    <div class="detail-header-top">
+                        <div class="detail-title-section">
+                            <h1 id="milestoneTitle" class="detail-title">Milestone Title</h1>
+                            <div class="detail-meta">
+                                <span class="meta-item">
+                                    <span class="meta-icon">🎯</span>
+                                    <span>Goal: <a href="#" id="milestoneGoalLink" class="goal-link"><strong
+                                                id="milestoneGoal">-</strong></a></span>
+                                </span>
+                                <span class="meta-item">
+                                    <span class="meta-icon">👤</span>
+                                    <span>Owner: <strong id="milestoneOwnerDisplay">-</strong></span>
+                                </span>
+                                <span class="meta-item">
+                                    <span class="meta-icon">📅</span>
+                                    <span>Due: <strong id="milestoneDueDate">-</strong></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn-secondary-small" onclick="editMilestone()">
+                                <span class="icon">✏️</span>
+                                Edit Milestone
+                            </button>
+                            <button class="btn-danger-small" onclick="confirmDeleteMilestone()">
+                                <span class="icon">🗑️</span>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Circle and Status Badge -->
+                    <div class="detail-header-bottom">
+                        <div class="progress-circle-container">
+                            <svg class="progress-circle" width="120" height="120">
+                                <circle class="progress-circle-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="progress-circle-fill" id="progressCircle" cx="60" cy="60" r="50">
+                                </circle>
+                            </svg>
+                            <div class="progress-text">
+                                <span class="progress-percent" id="progressPercent">0%</span>
+                                <span class="progress-label">Progress</span>
+                            </div>
+                        </div>
+                        <div class="status-badge-large" id="milestoneStatusBadge">PENDING</div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Progress</div>
+                        <div class="stat-value" id="milestoneProgressStat">0%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Status</div>
+                        <div class="stat-value" id="milestoneStatusStat">Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Tasks</div>
+                        <div class="stat-value" id="milestoneTaskCount">0</div>
+                    </div>
+                </div>
+
+                <!-- Milestone Description -->
+                <div class="detail-section">
+                    <h2 class="section-title">Description</h2>
+                    <div class="section-content">
+                        <p id="milestoneDescription">No description provided.</p>
+                    </div>
+                </div>
+
+                <!-- Related Tasks -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Related Tasks</h2>
+                        <button class="btn-secondary-small" onclick="addTask()">
+                            <span class="icon">+</span>
+                            Add Task
+                        </button>
+                    </div>
+                    <div id="tasksContainer" class="tasks-list">
+                        <!-- Tasks will be loaded here -->
+                        <div class="empty-message">
+                            <span class="empty-icon">✓</span>
+                            <p>No tasks yet. Create tasks to break down your milestone into actionable items.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
