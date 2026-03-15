@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Engine - FlowBit</title>
+    <link rel="stylesheet" href="../../assets/css/risk-engine.css">
+    <style>
+        /* Critical header styles - always load first */
+        .top-header {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 9999 !important;
+            background: white !important;
+            min-height: 70px !important;
+        }
+        body.no-sidebar-layout {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+    </style>
+</head>
+<body class="no-sidebar-layout">
+    <!-- Top Header Bar -->
+    <header class="top-header" style="display: flex !important; visibility: visible !important; opacity: 1 !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; background: white !important; width: 100% !important; min-height: 70px !important; padding: 16px 32px; box-sizing: border-box; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); justify-content: space-between; align-items: center;">
+        <div class="header-left" style="display: flex; align-items: center; gap: 24px; flex: 0 0 auto; min-width: 300px;">
+            <h1 class="page-title" style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0; white-space: nowrap;">Risk Engine</h1>
+            <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap;">
+                <a href="../dashboard/dashboard.html" style="color: #64748b; text-decoration: none;">Home</a>
+                <span class="separator" style="color: #cbd5e1; font-size: 16px;">›</span>
+                <span class="current" style="color: #0f172a; font-weight: 500;">Risk Engine</span>
+            </div>
+        </div>
+        
+        <div class="header-center" style="flex: 1 1 auto; display: flex; justify-content: center; max-width: 500px; margin: 0 24px;">
+            <div class="search-bar" style="position: relative; width: 100%; max-width: 400px;">
+                <span class="search-icon" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #64748b;">🔍</span>
+                <input type="text" placeholder="Search..." style="width: 100%; padding: 10px 16px 10px 42px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: #f8fafc;">
+            </div>
+        </div>
+        
+        <div class="header-right" style="display: flex; align-items: center; gap: 16px; flex: 0 0 auto; justify-content: flex-end; min-width: 180px;">
+            <button class="icon-btn notification-btn" style="position: relative; width: 40px; height: 40px; border-radius: 8px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                <span class="icon">🔔</span>
+                <span class="notification-badge" style="position: absolute; top: 6px; right: 6px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;">1</span>
+            </button>
+            <button class="icon-btn settings-btn" style="width: 40px; height: 40px; border-radius: 8px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                <span class="icon">⚙️</span>
+            </button>
+            <div class="user-avatar" id="userAvatar" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer;">JD</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card high-risk">
+                <div class="stat-icon">⚠</div>
+                <div class="stat-info">
+                    <div class="stat-value">8</div>
+                    <div class="stat-label">High Risk</div>
+                </div>
+            </div>
+            
+            <div class="stat-card medium-risk">
+                <div class="stat-icon">⚠</div>
+                <div class="stat-info">
+                    <div class="stat-value">15</div>
+                    <div class="stat-label">Medium Risk</div>
+                </div>
+            </div>
+            
+            <div class="stat-card low-risk">
+                <div class="stat-icon">✓</div>
+                <div class="stat-info">
+                    <div class="stat-value">119</div>
+                    <div class="stat-label">Low Risk</div>
+                </div>
+            </div>
+            
+            <div class="stat-card risk-score">
+                <div class="stat-icon">◐</div>
+                <div class="stat-info">
+                    <div class="stat-value">16.2%</div>
+                    <div class="stat-label">Risk Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Factors Analysis -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Risk Factors Analysis</h2>
+            </div>
+            
+            <div class="risk-factor-item">
+                <div class="factor-header">
+                    <div class="factor-title">
+                        <span class="factor-icon">⚡</span>
+                        <span>Task Complexity</span>
+                    </div>
+                    <span class="impact-badge high">High Impact</span>
+                </div>
+                <div class="factor-description">
+                    <p>High complexity tasks are increasing project risk. Consider breaking down complex tasks or allocating additional resources.</p>
+                </div>
+                <div class="factor-stats">
+                    <div class="stat-item">
+                        <span class="label">Affected Tasks:</span>
+                        <span class="value">24</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Risk Contribution:</span>
+                        <span class="value">32%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="risk-factor-item">
+                <div class="factor-header">
+                    <div class="factor-title">
+                        <span class="factor-icon">📅</span>
+                        <span>Timeline Delays</span>
+                    </div>
+                    <span class="impact-badge medium">Medium Impact</span>
+                </div>
+                <div class="factor-description">
+                    <p>Several milestones are approaching deadlines with incomplete tasks. Review timelines and adjust priorities.</p>
+                </div>
+                <div class="factor-stats">
+                    <div class="stat-item">
+                        <span class="label">Affected Milestones:</span>
+                        <span class="value">12</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Risk Contribution:</span>
+                        <span class="value">28%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="risk-factor-item">
+                <div class="factor-header">
+                    <div class="factor-title">
+                        <span class="factor-icon">👥</span>
+                        <span>Resource Allocation</span>
+                    </div>
+                    <span class="impact-badge high">High Impact</span>
+                </div>
+                <div class="factor-description">
+                    <p>Team capacity is near maximum. Over-allocation could lead to burnout and quality issues.</p>
+                </div>
+                <div class="factor-stats">
+                    <div class="stat-item">
+                        <span class="label">Team Members Affected:</span>
+                        <span class="value">8</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Risk Contribution:</span>
+                        <span class="value">25%</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="risk-factor-item">
+                <div class="factor-header">
+                    <div class="factor-title">
+                        <span class="factor-icon">🔗</span>
+                        <span>Dependencies</span>
+                    </div>
+                    <span class="impact-badge medium">Medium Impact</span>
+                </div>
+                <div class="factor-description">
+                    <p>Multiple tasks have cross-team dependencies. Coordinate with stakeholders to minimize blocking.</p>
+                </div>
+                <div class="factor-stats">
+                    <div class="stat-item">
+                        <span class="label">Blocked Tasks:</span>
+                        <span class="value">15</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Risk Contribution:</span>
+                        <span class="value">15%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Trends Chart -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Risk Trends Over Time</h2>
+            </div>
+            <div class="chart-container" style="height: 350px;">
+                <canvas id="riskTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Risk Distribution -->
+        <div class="two-column-grid">
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Risk by Category</h2>
+                </div>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="riskCategoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Risk by Impact</h2>
+                </div>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="riskImpactChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script type="module" src="js/supabase-client.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+        import supabase from '../../assets/js/config/supabase-client.js';
+
+        // Logout function
+        window.logout = async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                const { error } = await supabase.signOut();
+                if (error) {
+                    alert('Error logging out: ' + error.message);
+                } else {
+                    window.location.replace('login.html');
+                }
+            }
+        };
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Ensure header is visible
+            document.querySelector('.top-header').style.display = 'flex';
+            
+            const user = await supabase.getCurrentUser();
+            if (!user) {
+                window.location.replace('login.html');
+                return;
+            }
+
+            // Update user info
+            const initials = user.email.substring(0, 2).toUpperCase();
+            const avatarEl = document.getElementById('userAvatar');
+            if (avatarEl) {
+                avatarEl.textContent = initials;
+            }
+
+            // Initialize charts
+            initializeCharts();
+        });
+
+        // Initialize Chart.js charts
+        function initializeCharts() {
+            // Risk Trend Chart
+            const trendCtx = document.getElementById('riskTrendChart').getContext('2d');
+            new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5', 'Week 6'],
+                    datasets: [{
+                        label: 'High Risk',
+                        data: [5, 7, 6, 8, 9, 8],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Medium Risk',
+                        data: [12, 14, 13, 15, 16, 15],
+                        borderColor: '#f59e0b',
+                        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                        tension: 0.4
+                    }, {
+                        label: 'Low Risk',
+                        data: [18, 20, 22, 23, 24, 23],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Risk Category Chart
+            const categoryCtx = document.getElementById('riskCategoryChart').getContext('2d');
+            new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Technical', 'Resources', 'Budget', 'Schedule', 'Quality'],
+                    datasets: [{
+                        data: [12, 8, 6, 10, 10],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#10b981',
+                            '#f59e0b',
+                            '#ef4444',
+                            '#8b5cf6'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        }
+                    }
+                }
+            });
+
+            // Risk Impact Chart
+            const impactCtx = document.getElementById('riskImpactChart').getContext('2d');
+            new Chart(impactCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Critical', 'High', 'Medium', 'Low'],
+                    datasets: [{
+                        label: 'Number of Risks',
+                        data: [8, 12, 15, 11],
+                        backgroundColor: [
+                            '#ef4444',
+                            '#f59e0b',
+                            '#f59e0b',
+                            '#10b981'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
