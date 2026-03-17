@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - FlowBit</title>
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">≋</div>
+            <span>FlowBit</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="../dashboard/dashboard.html" class="nav-item active">
+                <span class="icon">▦</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="../goals/goals.html" class="nav-item">
+                <span class="icon">⚑</span>
+                <span>Goals</span>
+            </a>
+            <a href="../milestones/milestones.html" class="nav-item">
+                <span class="icon">◉</span>
+                <span>Milestones</span>
+            </a>
+            <a href="../tasks/tasks.html" class="nav-item">
+                <span class="icon">☰</span>
+                <span>Tasks</span>
+            </a>
+            <a href="../risk-engine/risk-engine.html" class="nav-item">
+                <span class="icon">⚠</span>
+                <span>Risk Engine</span>
+            </a>
+            <a href="../insights/insights.html" class="nav-item">
+                <span class="icon">◐</span>
+                <span>Insights</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatarSmall">JD</div>
+                <div class="user-info">
+                    <div class="user-name-small" id="userNameSmall">John Doe</div>
+                    <div class="user-role">Project Manager</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <span class="icon">→</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search...">
+                </div>
+                <div class="notification-bell">
+                    🔔
+                    <span class="badge">3</span>
+                </div>
+                <button class="theme-toggle">⚙️</button>
+                <div class="user-avatar" id="userAvatar">JD</div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card blue">
+                    <div class="stat-icon">🚩</div>
+                    <div class="stat-content">
+                        <div class="stat-value">24</div>
+                        <div class="stat-label">Active Goals</div>
+                    </div>
+                    <div class="stat-change positive">↑ 12%</div>
+                </div>
+
+                <div class="stat-card green">
+                    <div class="stat-icon">✓</div>
+                    <div class="stat-content">
+                        <div class="stat-value">68</div>
+                        <div class="stat-label">Milestones</div>
+                    </div>
+                    <div class="stat-change positive">↑ 8%</div>
+                </div>
+
+                <div class="stat-card orange">
+                    <div class="stat-icon">≡</div>
+                    <div class="stat-content">
+                        <div class="stat-value">142</div>
+                        <div class="stat-label">Active Tasks</div>
+                    </div>
+                    <div class="stat-change negative">↓ 3%</div>
+                </div>
+
+                <div class="stat-card red">
+                    <div class="stat-icon">△</div>
+                    <div class="stat-content">
+                        <div class="stat-value">8</div>
+                        <div class="stat-label">High Risk Tasks</div>
+                    </div>
+                    <div class="stat-change positive">↑ 2</div>
+                </div>
+            </div>
+
+            <!-- Main Grid: Recent Goals + Risk Alerts -->
+            <div class="dashboard-grid">
+                <!-- Recent Goals -->
+                <div class="card recent-goals">
+                    <div class="card-header">
+                        <h3>Recent Goals</h3>
+                        <button class="btn-primary">+ New Goal</button>
+                    </div>
+                    <div class="goals-list">
+                        <div class="goal-item">
+                            <div class="goal-info">
+                                <h4>Q1 Revenue Target Achievement</h4>
+                                <div class="goal-meta">
+                                    <span class="due-date">📅 Due: Mar 31, 2024</span>
+                                    <span class="owner">👤 Owner: Sarah Chen</span>
+                                </div>
+                            </div>
+                            <div class="goal-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 75%"></div>
+                                </div>
+                                <span class="progress-text">75%</span>
+                            </div>
+                            <span class="status-badge on-track">ON TRACK</span>
+                        </div>
+
+                        <div class="goal-item">
+                            <div class="goal-info">
+                                <h4>Product Launch Preparation</h4>
+                                <div class="goal-meta">
+                                    <span class="due-date">📅 Due: Apr 15, 2024</span>
+                                    <span class="owner">👤 Owner: Mike Johnson</span>
+                                </div>
+                            </div>
+                            <div class="goal-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 45%"></div>
+                                </div>
+                                <span class="progress-text">45%</span>
+                            </div>
+                            <span class="status-badge at-risk">AT RISK</span>
+                        </div>
+
+                        <div class="goal-item">
+                            <div class="goal-info">
+                                <h4>Customer Satisfaction Improvement</h4>
+                                <div class="goal-meta">
+                                    <span class="due-date">📅 Due: May 30, 2024</span>
+                                    <span class="owner">👤 Owner: Emily Davis</span>
+                                </div>
+                            </div>
+                            <div class="goal-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 30%"></div>
+                                </div>
+                                <span class="progress-text">30%</span>
+                            </div>
+                            <span class="status-badge behind">BEHIND</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Risk Alerts -->
+                <div class="card risk-alerts">
+                    <div class="card-header">
+                        <h3>Risk Alerts</h3>
+                        <div class="info-icon">ℹ️</div>
+                    </div>
+                    <div class="alerts-list">
+                        <div class="alert-item high">
+                            <div class="alert-icon">⭕</div>
+                            <div class="alert-content">
+                                <h4>High Workload Detected</h4>
+                                <p>Sarah Chen has 15 active tasks</p>
+                                <span class="alert-time">2 hours ago</span>
+                            </div>
+                            <span class="alert-badge high">HIGH</span>
+                        </div>
+
+                        <div class="alert-item medium">
+                            <div class="alert-icon">⚠️</div>
+                            <div class="alert-content">
+                                <h4>Deadline Approaching</h4>
+                                <p>3 tasks due within the next 48 hours</p>
+                                <span class="alert-time">5 hours ago</span>
+                            </div>
+                            <span class="alert-badge medium">MEDIUM</span>
+                        </div>
+
+                        <div class="alert-item high">
+                            <div class="alert-icon">🔺</div>
+                            <div class="alert-content">
+                                <h4>Complex Task Assignment</h4>
+                                <p>High complexity task assigned to new team member</p>
+                                <span class="alert-time">1 day ago</span>
+                            </div>
+                            <span class="alert-badge high">HIGH</span>
+                        </div>
+
+                        <div class="alert-item low">
+                            <div class="alert-icon">ℹ️</div>
+                            <div class="alert-content">
+                                <h4>Performance Notice</h4>
+                                <p>Average task completion time increased by 15%</p>
+                                <span class="alert-time">2 days ago</span>
+                            </div>
+                            <span class="alert-badge low">LOW</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Performance Overview -->
+            <div class="card team-performance">
+                <div class="card-header">
+                    <h3>Team Performance Overview</h3>
+                    <select class="time-filter">
+                        <option>Last 7 days</option>
+                        <option>Last 30 days</option>
+                        <option>Last 90 days</option>
+                    </select>
+                </div>
+                <div class="performance-chart">
+                    <p style="color: #94a3b8;">Chart visualization placeholder</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import supabase from '../../assets/js/config/supabase-client.js';
+
+        window.logout = async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await supabase.signOut();
+                    window.location.href = '../auth/login.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    alert('Logout failed. Please try again.');
+                }
+            }
+        };
+
+        // Load dashboard data
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const user = await supabase.getCurrentUser();
+                
+                if (!user) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                // Set user info
+                const userNameSmall = document.getElementById('userNameSmall');
+                const userAvatar = document.getElementById('userAvatar');
+                const userAvatarSmall = document.getElementById('userAvatarSmall');
+
+                userNameSmall.textContent = user.email;
+                
+                const email = user.email || 'U';
+                const initials = email.substring(0, 2).toUpperCase();
+                userAvatar.textContent = initials;
+                userAvatarSmall.textContent = initials;
+
+                console.log('✅ Dashboard loaded for user:', user.email);
+
+                // Try to load user profile
+                try {
+                    const profile = await supabase.getUserProfile(user.id);
+                    if (profile && profile.full_name) {
+                        const names = profile.full_name.split(' ');
+                        const profileInitials = names.map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                        userAvatar.textContent = profileInitials;
+                        userAvatarSmall.textContent = profileInitials;
+                        userNameSmall.textContent = profile.full_name;
+                    }
+                } catch (error) {
+                    console.log('Profile not loaded:', error);
+                }
+
+            } catch (error) {
+                console.error('Dashboard load error:', error);
+                window.location.href = '../auth/login.html';
+            }
+        });
+    </script>
+</body>
+</html>
