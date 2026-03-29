@@ -194,7 +194,187 @@
         </div>
     </div>
 
+    <script type="module">
 
+        import { SupabaseClient } from '../../assets/js/config/supabase-client.js';
+
+        const supabase = new SupabaseClient();
+        let currentUser = null;
+        let allMilestones = [];
+        let allGoals = [];
+        let teamMembers = [];
+        let currentMilestoneId = null;
+
+        // Check authentication
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                currentUser = await supabase.getCurrentUser();
+                if (!currentUser) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                // Update UI with user info
+                document.getElementById('userNameSmall').textContent = currentUser.email;
+                document.getElementById('userAvatarSmall').textContent = currentUser.email.charAt(0).toUpperCase();
+                document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+
+                // Load data in sequence to ensure dependencies
+                await loadTeamMembers();
+                await loadGoals();
+                // Wait for goals to load before loading milestones
+                await loadMilestones();
+
+                console.log('✅ Milestones page loaded successfully!');
+                console.log('📊 Final state - Goals:', allGoals.length, 'Milestones:', allMilestones.length);
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showToast('Failed to load page', 'error');
+            }
+        });
+
+        // Load Team Members for Owner Dropdown
+        async function loadTeamMembers() {
+            try {
+                const result = await supabase.getAllTeamMembers();
+
+                // Ensure result is an array
+                if (Array.isArray(result)) {
+                    teamMembers = result;
+                } else {
+                    console.warn('Team members result is not an array:', result);
+                    teamMembers = [];
+                }
+
+                console.log('✅ Loaded team members:', teamMembers.length);
+
+                // Always add current user if not already in list
+                const currentUserExists = teamMembers.some(m => m.email === currentUser.email);
+                if (!currentUserExists && currentUser) {
+                    teamMembers.push({
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        display_name: currentUser.email.split('@')[0]
+                    });
+                }
+
+                populateOwnerDropdown();
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                showToast('Failed to load team members. Using current user only.', 'warning');
+                // If loading fails, add at least current user
+                teamMembers = [{
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    display_name: currentUser.email.split('@')[0]
+                }];
+                populateOwnerDropdown();
+            }
+        }
+
+        function populateOwnerDropdown(selectedOwner = null) {
+            const ownerSelect = document.getElementById('milestoneOwner');
+
+            // Clear existing options except the first one
+            ownerSelect.innerHTML = '<option value="">Select owner...</option>';
+
+            // Add team members as options
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                // Use display_name, full_name, or email as fallback
+                const displayName = member.display_name || member.full_name || member.email.split('@')[0];
+                option.value = displayName;
+                option.textContent = displayName;
+
+                // Pre-select current user or specified owner
+                if (selectedOwner) {
+                    if (displayName === selectedOwner) {
+                        option.selected = true;
+                    }
+                } else if (member.email === currentUser.email) {
+                    option.selected = true;
+                }
+
+                ownerSelect.appendChild(option);
+            });
+
+            console.log('✅ Owner dropdown populated with', teamMembers.length, 'users');
+        }
+
+        // Load Goals for Filter and Modal
+        async function loadGoals() {
+            try {
+                const goals = await supabase.select('goals');
+                allGoals = goals || [];
+                console.log('✅ Loaded goals:', allGoals.length, allGoals);
+
+                // Populate goal filters
+                const goalFilter = document.getElementById('goalFilter');
+                const milestoneGoalSelect = document.getElementById('milestoneGoal');
+
+                // Clear existing options (except "All Goals" / "Select a goal")
+                goalFilter.innerHTML = '<option value="all">All Goals</option>';
+                milestoneGoalSelect.innerHTML = '<option value="">Select a goal...</option>';
+
+                if (allGoals && allGoals.length > 0) {
+                    allGoals.forEach(goal => {
+                        // Filter dropdown
+                        const filterOption = document.createElement('option');
+                        filterOption.value = goal.id;
+                        filterOption.textContent = goal.title;
+                        goalFilter.appendChild(filterOption);
+
+                        // Modal dropdown
+                        const modalOption = document.createElement('option');
+                        modalOption.value = goal.id;
+                        modalOption.textContent = goal.title;
+                        milestoneGoalSelect.appendChild(modalOption);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading goals:', error);
+                showToast('Failed to load goals', 'error');
+            }
+        }
+
+        // Load Milestones
+        async function loadMilestones() {
+            try {
+                showLoading(true);
+
+                // Ensure goals are loaded first
+                if (allGoals.length === 0) {
+                    console.warn('⚠️ Goals not loaded yet, loading now...');
+                    await loadGoals();
+                }
+
+                const milestones = await supabase.select('milestones', null, { order: 'due_date.asc' });
+                console.log('✅ Loaded milestones from DB:', milestones?.length || 0);
+
+                allMilestones = milestones || [];
+
+                console.log('📊 All milestones stored:', allMilestones.length);
+                console.log('📁 Goals available:', allGoals.length);
+                console.log('👥 Team members available:', teamMembers.length);
+
+                if (allMilestones.length === 0) {
+                    console.log('⚠️ No milestones found, showing empty state');
+                    showEmptyState();
+                } else {
+                    console.log('🔍 Calling filterMilestones() to render...');
+                    filterMilestones();
+                    console.log('✅ filterMilestones() completed');
+                }
+            } catch (error) {
+                console.error('❌ Error loading milestones:', error);
+                showToast('Failed to load milestones', 'error');
+                showEmptyState();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+    </script>
 
 
 </body>
