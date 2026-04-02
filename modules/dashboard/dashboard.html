@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - FlowBit</title>
     <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- Sidebar -->
@@ -14,7 +15,7 @@
             <span>FlowBit</span>
         </div>
 
-        <nav class="nav-menu">
+               <nav class="nav-menu">
             <a href="../dashboard/dashboard.html" class="nav-item active">
                 <span class="icon">▦</span>
                 <span>Dashboard</span>
@@ -81,37 +82,37 @@
                 <div class="stat-card blue">
                     <div class="stat-icon">🚩</div>
                     <div class="stat-content">
-                        <div class="stat-value">24</div>
+                        <div class="stat-value" id="activeGoalsCount">-</div>
                         <div class="stat-label">Active Goals</div>
                     </div>
-                    <div class="stat-change positive">↑ 12%</div>
+                    <div class="stat-change positive" id="goalsChange">↑ 12%</div>
                 </div>
 
                 <div class="stat-card green">
                     <div class="stat-icon">✓</div>
                     <div class="stat-content">
-                        <div class="stat-value">68</div>
+                        <div class="stat-value" id="milestonesCount">-</div>
                         <div class="stat-label">Milestones</div>
                     </div>
-                    <div class="stat-change positive">↑ 8%</div>
+                    <div class="stat-change positive" id="milestonesChange">↑ 8%</div>
                 </div>
 
                 <div class="stat-card orange">
                     <div class="stat-icon">≡</div>
                     <div class="stat-content">
-                        <div class="stat-value">142</div>
+                        <div class="stat-value" id="activeTasksCount">-</div>
                         <div class="stat-label">Active Tasks</div>
                     </div>
-                    <div class="stat-change negative">↓ 3%</div>
+                    <div class="stat-change negative" id="tasksChange">↓ 3%</div>
                 </div>
 
                 <div class="stat-card red">
                     <div class="stat-icon">△</div>
                     <div class="stat-content">
-                        <div class="stat-value">8</div>
+                        <div class="stat-value" id="highRiskTasksCount">-</div>
                         <div class="stat-label">High Risk Tasks</div>
                     </div>
-                    <div class="stat-change positive">↑ 2</div>
+                    <div class="stat-change positive" id="riskChange">↑ 2</div>
                 </div>
             </div>
 
@@ -121,7 +122,7 @@
                 <div class="card recent-goals">
                     <div class="card-header">
                         <h3>Recent Goals</h3>
-                        <button class="btn-primary">+ New Goal</button>
+                        <button class="btn-primary" onclick="window.location.href='../goals/goals.html'">+ New Goal</button>
                     </div>
                     <div class="goals-list">
                         <div class="goal-item">
@@ -181,7 +182,7 @@
                 <div class="card risk-alerts">
                     <div class="card-header">
                         <h3>Risk Alerts</h3>
-                        <div class="info-icon">ℹ️</div>
+                        <div class="info-icon" title="Risk Alerts show high-priority issues detected by the risk engine, including overdue tasks, high workload, blocked dependencies, and approaching deadlines.">ℹ️</div>
                     </div>
                     <div class="alerts-list">
                         <div class="alert-item high">
@@ -238,7 +239,7 @@
                     </select>
                 </div>
                 <div class="performance-chart">
-                    <p style="color: #94a3b8;">Chart visualization placeholder</p>
+                    <canvas id="teamPerformanceChart" style="height: 300px;"></canvas>
                 </div>
             </div>
         </div>
@@ -246,6 +247,9 @@
 
     <script type="module">
         import supabase from '../../assets/js/config/supabase-client.js';
+        
+        // Expose supabase to window for debugging
+        window.supabase = supabase;
 
         window.logout = async function() {
             if (confirm('Are you sure you want to logout?')) {
@@ -265,7 +269,7 @@
                 const user = await supabase.getCurrentUser();
                 
                 if (!user) {
-                    window.location.href = '../auth/login.html';
+                    window.location.href = 'login.html';
                     return;
                 }
 
@@ -283,6 +287,9 @@
 
                 console.log('✅ Dashboard loaded for user:', user.email);
 
+                // Load dashboard statistics
+                await loadDashboardStats();
+
                 // Try to load user profile
                 try {
                     const profile = await supabase.getUserProfile(user.id);
@@ -299,8 +306,964 @@
 
             } catch (error) {
                 console.error('Dashboard load error:', error);
-                window.location.href = '../auth/login.html';
+                window.location.href = 'login.html';
             }
+        });
+
+        // ========================================
+        // DASHBOARD STATISTICS WITH TRENDS
+        // ========================================
+
+        // Date range helper functions
+        const DateRanges = {
+            // Get start and end of current week (Monday to Sunday)
+            getCurrentWeek() {
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const monday = new Date(now);
+                monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+                monday.setHours(0, 0, 0, 0);
+                
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                sunday.setHours(23, 59, 59, 999);
+                
+                return { start: monday, end: sunday };
+            },
+
+            // Get start and end of previous week
+            getPreviousWeek() {
+                const currentWeek = this.getCurrentWeek();
+                const previousMonday = new Date(currentWeek.start);
+                previousMonday.setDate(currentWeek.start.getDate() - 7);
+                
+                const previousSunday = new Date(previousMonday);
+                previousSunday.setDate(previousMonday.getDate() + 6);
+                previousSunday.setHours(23, 59, 59, 999);
+                
+                return { start: previousMonday, end: previousSunday };
+            },
+
+            // Get today's date range
+            getToday() {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(today);
+                endOfDay.setHours(23, 59, 59, 999);
+                return { start: today, end: endOfDay };
+            },
+
+            // Get yesterday's date range
+            getYesterday() {
+                const yesterday = new Date();
+                yesterday.setDate(yesterday.getDate() - 1);
+                yesterday.setHours(0, 0, 0, 0);
+                const endOfDay = new Date(yesterday);
+                endOfDay.setHours(23, 59, 59, 999);
+                return { start: yesterday, end: endOfDay };
+            }
+        };
+
+        // Calculate percentage change safely
+        function calculatePercentageChange(oldValue, newValue) {
+            // Handle division by zero
+            if (oldValue === 0) {
+                if (newValue === 0) return 0;
+                return 100; // If old was 0 and new is not, show 100% increase
+            }
+            
+            const change = ((newValue - oldValue) / oldValue) * 100;
+            return Math.round(change); // Round to nearest integer
+        }
+
+        // Create trend object with all necessary information
+        function createTrendData(currentCount, previousCount, invertLogic = false) {
+            const percentageChange = calculatePercentageChange(previousCount, currentCount);
+            const isIncrease = currentCount > previousCount;
+            const isDecrease = currentCount < previousCount;
+            
+            // Determine if trend is positive based on context
+            // For most metrics, increase is good
+            // For High Risk Tasks, decrease is good (inverted logic)
+            let isPositive;
+            if (invertLogic) {
+                isPositive = isDecrease; // Decrease is good for risks
+            } else {
+                isPositive = isIncrease; // Increase is good for goals/tasks
+            }
+            
+            return {
+                value: currentCount,
+                previousValue: previousCount,
+                percentage: Math.abs(percentageChange),
+                percentageChange: percentageChange,
+                trend: isIncrease ? 'up' : isDecrease ? 'down' : 'neutral',
+                isPositive: isPositive,
+                colorClass: isIncrease === isDecrease ? 'neutral' : (isPositive ? 'positive' : 'negative'),
+                icon: isIncrease ? '↑' : isDecrease ? '↓' : '→',
+                displayText: `${isIncrease ? '↑' : isDecrease ? '↓' : '→'} ${Math.abs(percentageChange)}%`
+            };
+        }
+
+        // Filter records by date range
+        function filterByDateRange(records, dateRange, dateField = 'created_at') {
+            return records.filter(record => {
+                const recordDate = new Date(record[dateField]);
+                return recordDate >= dateRange.start && recordDate <= dateRange.end;
+            });
+        }
+
+        // Load Dashboard Statistics with Trends
+        async function loadDashboardStats() {
+            try {
+                // Fetch all data from Supabase
+                const [goalsResponse, milestonesResponse, tasksResponse] = await Promise.all([
+                    supabase.select('goals'),
+                    supabase.select('milestones'),
+                    supabase.select('tasks')
+                ]);
+
+                const allGoals = goalsResponse || [];
+                const allMilestones = milestonesResponse || [];
+                const allTasks = tasksResponse || [];
+
+                // Get date ranges
+                const currentWeek = DateRanges.getCurrentWeek();
+                const previousWeek = DateRanges.getPreviousWeek();
+                const today = DateRanges.getToday();
+                const yesterday = DateRanges.getYesterday();
+                const now = new Date();
+
+                // ========== 1. ACTIVE GOALS ==========
+                // Count: Goals where status = 'Active' (exact match)
+                // Trend: This week vs last week
+                
+                const activeGoalsNow = allGoals.filter(g => g.status && g.status.toLowerCase() === 'active');
+                const activeGoalsThisWeek = filterByDateRange(activeGoalsNow, currentWeek, 'created_at');
+                const activeGoalsPrevWeek = filterByDateRange(activeGoalsNow, previousWeek, 'created_at');
+                
+                const goalsTrend = createTrendData(
+                    activeGoalsThisWeek.length,
+                    activeGoalsPrevWeek.length,
+                    false // Increase is good
+                );
+                
+                updateStatCard('activeGoalsCount', 'goalsChange', activeGoalsNow.length, goalsTrend);
+                console.log('✅ Active Goals:', activeGoalsNow.length, '| This week:', activeGoalsThisWeek.length, '| Last week:', activeGoalsPrevWeek.length, '| Trend:', goalsTrend.displayText);
+
+                // ========== 2. MILESTONES ==========
+                // Count: Milestones where status != 'COMPLETED'
+                // Trend: This week vs last week
+                
+                const activeMilestonesNow = allMilestones.filter(m => m.status && m.status.toUpperCase() !== 'COMPLETED');
+                const milestonesThisWeek = filterByDateRange(activeMilestonesNow, currentWeek, 'created_at');
+                const milestonesPrevWeek = filterByDateRange(activeMilestonesNow, previousWeek, 'created_at');
+                
+                const milestonesTrend = createTrendData(
+                    milestonesThisWeek.length,
+                    milestonesPrevWeek.length,
+                    false // Increase is good
+                );
+                
+                updateStatCard('milestonesCount', 'milestonesChange', activeMilestonesNow.length, milestonesTrend);
+                console.log('✅ Milestones:', activeMilestonesNow.length, '| This week:', milestonesThisWeek.length, '| Last week:', milestonesPrevWeek.length, '| Trend:', milestonesTrend.displayText);
+
+                // ========== 3. ACTIVE TASKS ==========
+                // Count: Tasks where status IN ('TODO', 'IN_PROGRESS')
+                // Trend: Today vs yesterday
+                
+                const activeTasksNow = allTasks.filter(t => 
+                    t.status === 'TODO' || t.status === 'IN_PROGRESS'
+                );
+                const tasksToday = filterByDateRange(activeTasksNow, today, 'created_at');
+                const tasksYesterday = filterByDateRange(activeTasksNow, yesterday, 'created_at');
+                
+                const tasksTrend = createTrendData(
+                    tasksToday.length,
+                    tasksYesterday.length,
+                    false // Increase is good
+                );
+                
+                updateStatCard('activeTasksCount', 'tasksChange', activeTasksNow.length, tasksTrend);
+                console.log('✅ Active Tasks:', activeTasksNow.length, '| Today:', tasksToday.length, '| Yesterday:', tasksYesterday.length, '| Trend:', tasksTrend.displayText);
+
+                // ========== 4. HIGH RISK TASKS ==========
+                // Count: Tasks where priority = 'CRITICAL' OR (due_date < today AND status != 'COMPLETED')
+                // Trend: Today vs yesterday
+                
+                const highRiskTasksNow = allTasks.filter(t => {
+                    // Critical priority
+                    if (t.priority === 'CRITICAL') return true;
+                    
+                    // Overdue and not completed
+                    if (t.due_date && t.status !== 'COMPLETED') {
+                        const dueDate = new Date(t.due_date);
+                        return dueDate < now;
+                    }
+                    
+                    return false;
+                });
+                
+                const highRiskToday = filterByDateRange(highRiskTasksNow, today, 'created_at');
+                const highRiskYesterday = filterByDateRange(highRiskTasksNow, yesterday, 'created_at');
+                
+                const riskTrend = createTrendData(
+                    highRiskToday.length,
+                    highRiskYesterday.length,
+                    true // INVERTED: Decrease is good for risks
+                );
+                
+                updateStatCard('highRiskTasksCount', 'riskChange', highRiskTasksNow.length, riskTrend);
+                console.log('✅ High Risk Tasks:', highRiskTasksNow.length, '| Today:', highRiskToday.length, '| Yesterday:', highRiskYesterday.length, '| Trend:', riskTrend.displayText);
+
+                // ========== 5. LOAD TEAM PERFORMANCE CHART ==========
+                await loadTeamPerformanceChart(allTasks);
+
+            } catch (error) {
+                console.error('Error loading dashboard stats:', error);
+                // Set to 0 on error
+                document.getElementById('activeGoalsCount').textContent = '0';
+                document.getElementById('milestonesCount').textContent = '0';
+                document.getElementById('activeTasksCount').textContent = '0';
+                document.getElementById('highRiskTasksCount').textContent = '0';
+            }
+        }
+
+        // Update stat card with count and trend
+        function updateStatCard(countId, changeId, count, trendData) {
+            // Update count
+            const countElement = document.getElementById(countId);
+            if (countElement) {
+                countElement.textContent = count;
+            }
+            
+            // Update trend indicator
+            const changeElement = document.getElementById(changeId);
+            if (changeElement) {
+                changeElement.textContent = trendData.displayText;
+                changeElement.className = `stat-change ${trendData.colorClass}`;
+            }
+        }
+
+        // ========================================
+        // TEAM PERFORMANCE CHART
+        // ========================================
+        
+        let teamPerformanceChart = null;
+
+        async function loadTeamPerformanceChart(allTasks) {
+            try {
+                const canvas = document.getElementById('teamPerformanceChart');
+                if (!canvas) {
+                    console.error('Chart canvas not found');
+                    return;
+                }
+
+                // Read the selected time period from dropdown
+                const timeFilter = document.querySelector('.time-filter');
+                const selectedPeriod = timeFilter ? timeFilter.value : 'Last 7 days';
+                
+                // Determine number of days based on selection
+                let daysToShow = 7;
+                if (selectedPeriod.includes('30')) {
+                    daysToShow = 30;
+                } else if (selectedPeriod.includes('90')) {
+                    daysToShow = 90;
+                }
+
+                // Get data for the selected period
+                const labels = [];
+                const completedData = [];
+                const createdData = [];
+
+                for (let i = daysToShow - 1; i >= 0; i--) {
+                    const date = new Date();
+                    date.setDate(date.getDate() - i);
+                    date.setHours(0, 0, 0, 0);
+                    
+                    const nextDate = new Date(date);
+                    nextDate.setDate(date.getDate() + 1);
+                    
+                    // Format label based on period length
+                    let label;
+                    if (daysToShow <= 7) {
+                        // For 7 days: "Mon 1"
+                        const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+                        const dayNum = date.getDate();
+                        label = `${dayName} ${dayNum}`;
+                    } else if (daysToShow <= 30) {
+                        // For 30 days: "Apr 1"
+                        const month = date.toLocaleDateString('en-US', { month: 'short' });
+                        const dayNum = date.getDate();
+                        label = `${month} ${dayNum}`;
+                    } else {
+                        // For 90 days: "4/1" (month/day)
+                        const month = date.getMonth() + 1;
+                        const dayNum = date.getDate();
+                        label = `${month}/${dayNum}`;
+                    }
+                    labels.push(label);
+                    
+                    // Count tasks completed on this day
+                    const completed = allTasks.filter(t => {
+                        if (!t.completed_at) return false;
+                        const completedDate = new Date(t.completed_at);
+                        return completedDate >= date && completedDate < nextDate;
+                    }).length;
+                    completedData.push(completed);
+                    
+                    // Count tasks created on this day
+                    const created = allTasks.filter(t => {
+                        const createdDate = new Date(t.created_at);
+                        return createdDate >= date && createdDate < nextDate;
+                    }).length;
+                    createdData.push(created);
+                }
+
+                // Calculate totals for legend
+                const totalCompleted = completedData.reduce((sum, val) => sum + val, 0);
+                const totalCreated = createdData.reduce((sum, val) => sum + val, 0);
+
+                // Destroy existing chart if it exists
+                if (teamPerformanceChart) {
+                    teamPerformanceChart.destroy();
+                }
+
+                // Create new chart
+                const ctx = canvas.getContext('2d');
+                teamPerformanceChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: `Tasks Completed (${totalCompleted})`,
+                                data: completedData,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: `Tasks Created (${totalCreated})`,
+                                data: createdData,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    usePointStyle: true,
+                                    padding: 15,
+                                    font: {
+                                        size: 12,
+                                        weight: '500'
+                                    },
+                                    boxWidth: 12,
+                                    boxHeight: 12,
+                                    filter: function(legendItem, chartData) {
+                                        // Only show our two dataset labels (with counts)
+                                        return legendItem.text.includes('Tasks Completed') || legendItem.text.includes('Tasks Created');
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                enabled: false  // Disable tooltip completely
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                suggestedMax: Math.max(...completedData, ...createdData) + 2,
+                                ticks: {
+                                    stepSize: Math.max(1, Math.ceil(Math.max(...completedData, ...createdData) / 10)),
+                                    font: {
+                                        size: 11
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Number of Tasks',
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    font: {
+                                        size: 11
+                                    },
+                                    // Show fewer labels for longer periods to avoid crowding
+                                    maxTicksLimit: daysToShow <= 7 ? 7 : (daysToShow <= 30 ? 10 : 12),
+                                    maxRotation: 45,
+                                    minRotation: daysToShow > 30 ? 45 : 0
+                                },
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        }
+                    }
+                });
+
+
+
+            } catch (error) {
+                console.error('Error loading team performance chart:', error);
+                const chartContainer = document.querySelector('.performance-chart');
+                if (chartContainer) {
+                    chartContainer.innerHTML = '<p style="color: #ef4444; text-align: center; padding: 20px;">Error loading chart. Please refresh the page.</p>';
+                }
+            }
+        }
+
+        // ========================================
+        // RECENT GOALS SECTION - LOAD REAL DATA
+        // ========================================
+        async function loadRecentGoals() {
+            try {
+                // Fetch goals and milestones
+                const [goalsResponse, milestonesResponse] = await Promise.all([
+                    supabase.select('goals', null, {
+                        order: 'created_at.desc',
+                        limit: 10
+                    }),
+                    supabase.select('milestones')
+                ]);
+
+                const goals = goalsResponse || [];
+                const allMilestones = milestonesResponse || [];
+
+                if (goals.length === 0) {
+                    // Show empty state
+                    const goalsListEl = document.querySelector('.goals-list');
+                    if (goalsListEl) {
+                        goalsListEl.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #64748b;">
+                                <p style="font-size: 16px; margin-bottom: 8px;">No goals yet</p>
+                                <p style="font-size: 14px;">Click "+ New Goal" to create your first goal</p>
+                            </div>
+                        `;
+                    }
+                    return;
+                }
+
+                // Calculate progress for each goal
+                const goalsWithProgress = goals.slice(0, 5).map(goal => {
+                    // Get milestones for this goal
+                    const goalMilestones = allMilestones.filter(m => m.goal_id === goal.id);
+                    const totalMilestones = goalMilestones.length;
+                    const completedMilestones = goalMilestones.filter(m => m.status === 'COMPLETED').length;
+                    
+                    // Calculate progress
+                    let progress = goal.progress || 0;
+                    if (totalMilestones > 0) {
+                        progress = Math.round((completedMilestones / totalMilestones) * 100);
+                    }
+                    
+                    // Determine status based on progress and due date
+                    const status = calculateGoalStatus(goal, progress);
+                    
+                    return {
+                        ...goal,
+                        progress,
+                        status,
+                        milestoneCount: totalMilestones
+                    };
+                });
+
+                // Render goals
+                const goalsListEl = document.querySelector('.goals-list');
+                if (goalsListEl) {
+                    goalsListEl.innerHTML = goalsWithProgress.map(goal => createGoalItemHTML(goal)).join('');
+                }
+
+                console.log('✅ Recent Goals loaded:', goalsWithProgress.length, 'goals');
+            } catch (error) {
+                console.error('Error loading recent goals:', error);
+            }
+        }
+
+        // Calculate goal status based on progress and due date
+        function calculateGoalStatus(goal, progress) {
+            const now = new Date();
+            const dueDate = goal.due_date || goal.target_date;
+            
+            if (!dueDate) {
+                // No due date - use progress only
+                return progress >= 80 ? 'ON_TRACK' : progress >= 50 ? 'AT_RISK' : 'BEHIND';
+            }
+
+            const dueDateObj = new Date(dueDate);
+            const daysUntilDue = (dueDateObj - now) / (1000 * 60 * 60 * 24);
+
+            // Goal status logic (industry standard):
+            // ON_TRACK: Good progress OR plenty of time left
+            // AT_RISK: Medium progress with limited time
+            // BEHIND: Low progress OR overdue
+
+            if (daysUntilDue < 0) {
+                // Overdue
+                return progress >= 90 ? 'ON_TRACK' : 'BEHIND';
+            }
+
+            if (progress >= 80) {
+                return 'ON_TRACK';
+            } else if (progress >= 50) {
+                return daysUntilDue >= 7 ? 'ON_TRACK' : 'AT_RISK';
+            } else {
+                return daysUntilDue >= 14 ? 'AT_RISK' : 'BEHIND';
+            }
+        }
+
+        // Create goal item HTML
+        function createGoalItemHTML(goal) {
+            // Handle both "ON_TRACK" and "ON TRACK" formats
+            const statusText = goal.status.replace(/_/g, ' '); // Convert ON_TRACK to ON TRACK for display
+            const statusClass = goal.status.toLowerCase().replace(/_/g, '-'); // Convert to on-track for CSS class
+            const dueDate = goal.due_date || goal.target_date || 'No deadline';
+            const formattedDate = dueDate !== 'No deadline' ? new Date(dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : dueDate;
+            const owner = goal.owner || 'Unassigned';
+
+            return `
+                <div class="goal-item" onclick="window.location.href='../goals/goals.html'">
+                    <div class="goal-info">
+                        <h4>${escapeHtml(goal.title)}</h4>
+                        <div class="goal-meta">
+                            <span class="due-date">📅 Due: ${formattedDate}</span>
+                            <span class="owner">👤 Owner: ${escapeHtml(owner)}</span>
+                        </div>
+                    </div>
+                    <div class="goal-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${goal.progress}%"></div>
+                        </div>
+                        <span class="progress-text">${goal.progress}%</span>
+                    </div>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+            `;
+        }
+
+        // HTML escape utility
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ========================================
+        // RISK ALERTS SECTION - INDUSTRY STANDARD LOGIC
+        // ========================================
+        async function loadRiskAlerts() {
+            try {
+                // Fetch all tasks and user profiles
+                const [tasksResponse, usersResponse] = await Promise.all([
+                    supabase.select('tasks'),
+                    supabase.select('user_profiles')
+                ]);
+
+                const allTasks = tasksResponse || [];
+                const allUsers = usersResponse || [];
+
+                // Generate alerts based on industry-standard risk factors
+                const alerts = [];
+                const now = new Date();
+
+                // Create user lookup map
+                const userMap = {};
+                allUsers.forEach(user => {
+                    userMap[user.id] = user;
+                });
+
+                // 1. HIGH WORKLOAD ALERT - User has > 10 active tasks
+                const userWorkload = {};
+                allTasks.forEach(task => {
+                    if ((task.status === 'TODO' || task.status === 'IN_PROGRESS') && task.assignee_id) {
+                        userWorkload[task.assignee_id] = (userWorkload[task.assignee_id] || 0) + 1;
+                    }
+                });
+
+                Object.keys(userWorkload).forEach(userId => {
+                    const count = userWorkload[userId];
+                    if (count > 10) {
+                        const user = userMap[userId];
+                        const userName = user ? (user.display_name || user.email) : 'User';
+                        const priority = count > 15 ? 'CRITICAL' : 'HIGH';
+                        alerts.push({
+                            type: 'HIGH_WORKLOAD',
+                            priority,
+                            icon: '⭕',
+                            title: 'High Workload Detected',
+                            message: `${userName} has ${count} active tasks`,
+                            timestamp: now,
+                            userId
+                        });
+                    }
+                });
+
+                // 2. DEADLINE APPROACHING - Tasks due within 48 hours
+                const upcomingTasks = allTasks.filter(task => {
+                    if (task.status === 'COMPLETED' || !task.due_date) return false;
+                    const dueDate = new Date(task.due_date);
+                    const hoursUntilDue = (dueDate - now) / (1000 * 60 * 60);
+                    return hoursUntilDue > 0 && hoursUntilDue <= 48;
+                });
+
+                if (upcomingTasks.length > 0) {
+                    const priority = upcomingTasks.length > 5 ? 'HIGH' : 'MEDIUM';
+                    alerts.push({
+                        type: 'DEADLINE_APPROACHING',
+                        priority,
+                        icon: '⚠️',
+                        title: 'Deadline Approaching',
+                        message: `${upcomingTasks.length} task${upcomingTasks.length > 1 ? 's' : ''} due within the next 48 hours`,
+                        timestamp: new Date(now - 5 * 60 * 60 * 1000), // 5 hours ago
+                        tasks: upcomingTasks
+                    });
+                }
+
+                // 3. OVERDUE TASKS - Tasks past due date
+                const overdueTasks = allTasks.filter(task => {
+                    if (task.status === 'COMPLETED' || !task.due_date) return false;
+                    const dueDate = new Date(task.due_date);
+                    return dueDate < now;
+                });
+
+                if (overdueTasks.length > 0) {
+                    alerts.push({
+                        type: 'OVERDUE_TASKS',
+                        priority: 'CRITICAL',
+                        icon: '🔺',
+                        title: 'Overdue Tasks',
+                        message: `${overdueTasks.length} task${overdueTasks.length > 1 ? 's are' : ' is'} past due date`,
+                        timestamp: new Date(now - 24 * 60 * 60 * 1000), // 1 day ago
+                        tasks: overdueTasks
+                    });
+                }
+
+                // 4. COMPLEX TASK TO NEW USER - HIGH/CRITICAL priority task to user with < 5 completed tasks
+                const complexTasksToNewUsers = allTasks.filter(task => {
+                    if (task.status === 'COMPLETED' || !task.assignee_id) return false;
+                    if (task.priority !== 'HIGH' && task.priority !== 'CRITICAL') return false;
+                    
+                    const user = userMap[task.assignee_id];
+                    if (!user) return false;
+                    
+                    const completedCount = user.tasks_completed_count || 0;
+                    return completedCount < 5;
+                });
+
+                if (complexTasksToNewUsers.length > 0) {
+                    alerts.push({
+                        type: 'COMPLEX_TASK_NEW_USER',
+                        priority: 'HIGH',
+                        icon: '🔺',
+                        title: 'Complex Task Assignment',
+                        message: `${complexTasksToNewUsers.length} high-priority task${complexTasksToNewUsers.length > 1 ? 's' : ''} assigned to new team member${complexTasksToNewUsers.length > 1 ? 's' : ''}`,
+                        timestamp: new Date(now - 1 * 24 * 60 * 60 * 1000), // 1 day ago
+                        tasks: complexTasksToNewUsers
+                    });
+                }
+
+                // 5. PERFORMANCE NOTICE - Users with slow avg completion time
+                const performanceIssues = allUsers.filter(user => {
+                    if (!user.avg_completion_time_days) return false;
+                    // If avg > 7 days, flag as performance issue
+                    return user.avg_completion_time_days > 7;
+                });
+
+                if (performanceIssues.length > 0) {
+                    const user = performanceIssues[0];
+                    const userName = user.display_name || user.email;
+                    alerts.push({
+                        type: 'PERFORMANCE_NOTICE',
+                        priority: 'LOW',
+                        icon: 'ℹ️',
+                        title: 'Performance Notice',
+                        message: `${userName}'s average task completion time is ${user.avg_completion_time_days.toFixed(1)} days`,
+                        timestamp: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+                        userId: user.id
+                    });
+                }
+
+                // Sort alerts by priority (CRITICAL > HIGH > MEDIUM > LOW)
+                const priorityOrder = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+                alerts.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+                // Take top 5 alerts
+                const topAlerts = alerts.slice(0, 5);
+
+                // Render alerts
+                const alertsListEl = document.querySelector('.alerts-list');
+                if (alertsListEl) {
+                    if (topAlerts.length === 0) {
+                        alertsListEl.innerHTML = `
+                            <div style="text-align: center; padding: 40px; color: #64748b;">
+                                <p style="font-size: 16px; margin-bottom: 8px;">✅ No alerts</p>
+                                <p style="font-size: 14px;">All systems running smoothly!</p>
+                            </div>
+                        `;
+                    } else {
+                        alertsListEl.innerHTML = topAlerts.map(alert => createAlertItemHTML(alert)).join('');
+                    }
+                }
+
+                console.log('✅ Risk Alerts loaded:', topAlerts.length, 'alerts');
+            } catch (error) {
+                console.error('Error loading risk alerts:', error);
+            }
+        }
+
+        // Create alert item HTML
+        function createAlertItemHTML(alert) {
+            const priorityClass = alert.priority.toLowerCase();
+            const timeAgo = getTimeAgo(alert.timestamp);
+
+            return `
+                <div class="alert-item ${priorityClass}">
+                    <div class="alert-icon">${alert.icon}</div>
+                    <div class="alert-content">
+                        <h4>${escapeHtml(alert.title)}</h4>
+                        <p>${escapeHtml(alert.message)}</p>
+                        <span class="alert-time">${timeAgo}</span>
+                    </div>
+                    <span class="alert-badge ${priorityClass}">${alert.priority}</span>
+                </div>
+            `;
+        }
+
+        // Time ago utility
+        function getTimeAgo(timestamp) {
+            const now = new Date();
+            const diff = now - new Date(timestamp);
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+            if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`;
+            if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+            return 'Just now';
+        }
+
+        // ========================================
+        // TEAM PERFORMANCE CHART - CHART.JS
+        // ========================================
+        async function loadTeamPerformance() {
+            try {
+                // Fetch completed tasks and users
+                const [tasksResponse, usersResponse] = await Promise.all([
+                    supabase.select('tasks', { status: 'COMPLETED' }),
+                    supabase.select('user_profiles')
+                ]);
+
+                const completedTasks = tasksResponse || [];
+                const allUsers = usersResponse || [];
+
+                // Get selected time period
+                const timeFilter = document.querySelector('.time-filter');
+                const selectedPeriod = timeFilter ? timeFilter.value : 'Last 7 days';
+                
+                // Calculate date range
+                const now = new Date();
+                let daysBack = 7;
+                if (selectedPeriod.includes('30')) daysBack = 30;
+                if (selectedPeriod.includes('90')) daysBack = 90;
+
+                const startDate = new Date(now);
+                startDate.setDate(now.getDate() - daysBack);
+                startDate.setHours(0, 0, 0, 0);
+
+                // Filter tasks by date range
+                const tasksInRange = completedTasks.filter(task => {
+                    if (!task.completed_at) return false;
+                    const completedDate = new Date(task.completed_at);
+                    return completedDate >= startDate;
+                });
+
+                // Group tasks by user and date
+                const userStats = {};
+                allUsers.forEach(user => {
+                    userStats[user.id] = {
+                        name: user.display_name || user.email || 'Unknown',
+                        dailyCount: {}
+                    };
+                });
+
+                tasksInRange.forEach(task => {
+                    if (!task.assignee_id || !task.completed_at) return;
+                    
+                    const completedDate = new Date(task.completed_at);
+                    const dateKey = completedDate.toISOString().split('T')[0];
+                    
+                    if (!userStats[task.assignee_id]) return;
+                    
+                    if (!userStats[task.assignee_id].dailyCount[dateKey]) {
+                        userStats[task.assignee_id].dailyCount[dateKey] = 0;
+                    }
+                    userStats[task.assignee_id].dailyCount[dateKey]++;
+                });
+
+                // Generate date labels
+                const labels = [];
+                for (let i = daysBack - 1; i >= 0; i--) {
+                    const date = new Date(now);
+                    date.setDate(now.getDate() - i);
+                    labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+                }
+
+                // Generate datasets (one per user with tasks)
+                const datasets = [];
+                const colors = [
+                    '#3b82f6', // Blue
+                    '#10b981', // Green
+                    '#f59e0b', // Orange
+                    '#ef4444', // Red
+                    '#8b5cf6', // Purple
+                    '#ec4899', // Pink
+                    '#14b8a6', // Teal
+                ];
+
+                let colorIndex = 0;
+                Object.keys(userStats).forEach(userId => {
+                    const user = userStats[userId];
+                    const totalTasks = Object.values(user.dailyCount).reduce((sum, count) => sum + count, 0);
+                    
+                    // Only include users with at least 1 completed task
+                    if (totalTasks === 0) return;
+                    
+                    const data = [];
+                    for (let i = daysBack - 1; i >= 0; i--) {
+                        const date = new Date(now);
+                        date.setDate(now.getDate() - i);
+                        const dateKey = date.toISOString().split('T')[0];
+                        data.push(user.dailyCount[dateKey] || 0);
+                    }
+                    
+                    datasets.push({
+                        label: user.name,
+                        data: data,
+                        borderColor: colors[colorIndex % colors.length],
+                        backgroundColor: colors[colorIndex % colors.length] + '20',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: false
+                    });
+                    
+                    colorIndex++;
+                });
+
+                // Render chart
+                const chartContainer = document.querySelector('.performance-chart');
+                if (chartContainer) {
+                    if (datasets.length === 0) {
+                        chartContainer.innerHTML = `
+                            <div style="text-align: center; padding: 60px; color: #64748b;">
+                                <p style="font-size: 16px; margin-bottom: 8px;">No completed tasks yet</p>
+                                <p style="font-size: 14px;">Complete some tasks to see team performance trends</p>
+                            </div>
+                        `;
+                    } else {
+                        // Create canvas for chart
+                        chartContainer.innerHTML = '<canvas id="teamPerformanceChart" style="height: 300px;"></canvas>';
+                        
+                        // Render Chart.js
+                        const ctx = document.getElementById('teamPerformanceChart').getContext('2d');
+                        new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                plugins: {
+                                    legend: {
+                                        display: true,
+                                        position: 'bottom'
+                                    },
+                                    title: {
+                                        display: false
+                                    }
+                                },
+                                scales: {
+                                    y: {
+                                        beginAtZero: true,
+                                        ticks: {
+                                            stepSize: 1
+                                        },
+                                        title: {
+                                            display: true,
+                                            text: 'Tasks Completed'
+                                        }
+                                    },
+                                    x: {
+                                        title: {
+                                            display: true,
+                                            text: 'Date'
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+
+                console.log('✅ Team Performance chart loaded:', datasets.length, 'team members');
+            } catch (error) {
+                console.error('Error loading team performance:', error);
+                const chartContainer = document.querySelector('.performance-chart');
+                if (chartContainer) {
+                    chartContainer.innerHTML = `
+                        <div style="text-align: center; padding: 60px; color: #ef4444;">
+                            <p>Error loading chart. Please refresh the page.</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Add event listener for time filter change
+        window.addEventListener('DOMContentLoaded', () => {
+            const timeFilter = document.querySelector('.time-filter');
+            if (timeFilter) {
+                timeFilter.addEventListener('change', async () => {
+                    // Reload the correct chart when filter changes
+                    const allTasks = await supabase.select('tasks');
+                    await loadTeamPerformanceChart(allTasks || []);
+                });
+            }
+        });
+
+        // Call all loading functions after dashboard stats
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Wait for stats to load first
+            setTimeout(async () => {
+                await loadRecentGoals();
+                await loadRiskAlerts();
+                // loadTeamPerformance(); // Removed - using loadTeamPerformanceChart() instead (called from loadDashboardStats)
+            }, 500);
         });
     </script>
 </body>
