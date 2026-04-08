@@ -374,6 +374,296 @@
             }
         }
 
+        // Filter Milestones
+        window.filterMilestones = function () {
+            console.log('🔍 filterMilestones() called');
+            console.log('   allMilestones:', allMilestones.length);
+            console.log('   allGoals:', allGoals.length);
+            console.log('   teamMembers:', teamMembers.length);
+
+            const scopeFilter = document.getElementById('scopeFilter').value;
+            const goalFilter = document.getElementById('goalFilter').value;
+
+            console.log('   scopeFilter:', scopeFilter);
+            console.log('   goalFilter:', goalFilter);
+
+            let filtered = [...allMilestones]; // Create a copy
+
+            // Apply scope filter based on owner field
+            if (scopeFilter === 'my') {
+                // Get current user's display name
+                const currentUserDisplayName = currentUser.email.split('@')[0];
+
+                // Find current user in team members to get their display name
+                const currentUserMember = teamMembers.find(m => m.email === currentUser.email);
+                const userDisplayName = currentUserMember ?
+                    (currentUserMember.display_name || currentUserMember.full_name || currentUserDisplayName) :
+                    currentUserDisplayName;
+
+                console.log('🔍 Filtering "My Milestones" for owner:', userDisplayName);
+                filtered = filtered.filter(m => {
+                    console.log('  Milestone owner:', m.owner, '- Match:', m.owner === userDisplayName);
+                    return m.owner === userDisplayName;
+                });
+            }
+
+            // Apply goal filter
+            if (goalFilter !== 'all') {
+                console.log('🔍 Filtering by goal:', goalFilter);
+                filtered = filtered.filter(m => m.goal_id === goalFilter);
+            }
+
+            console.log('✅ Filtered milestones:', filtered.length, 'of', allMilestones.length);
+
+            if (filtered.length === 0) {
+                console.log('⚠️ No milestones after filtering, showing empty state');
+                showEmptyState();
+            } else {
+                console.log('✅ Rendering', filtered.length, 'milestones');
+                renderMilestones(filtered);
+            }
+        };
+
+        // Render Milestones grouped by Goal
+        function renderMilestones(milestones) {
+            console.log('🎨 renderMilestones called with', milestones.length, 'milestones');
+            console.log('📁 Available goals:', allGoals.length);
+
+            if (!milestones || milestones.length === 0) {
+                console.log('⚠️ No milestones to render, showing empty state');
+                showEmptyState();
+                return;
+            }
+
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('milestonesContainer').style.display = 'block';
+
+            // Group milestones by goal
+            const groupedByGoal = {};
+
+            milestones.forEach(milestone => {
+                const goalId = milestone.goal_id || 'no-goal';
+                if (!groupedByGoal[goalId]) {
+                    groupedByGoal[goalId] = [];
+                }
+                groupedByGoal[goalId].push(milestone);
+            });
+
+            console.log('📦 Grouped by goal:', Object.keys(groupedByGoal).length, 'groups');
+
+            const container = document.getElementById('milestonesContainer');
+            container.innerHTML = '';
+
+            // Render each group
+            Object.keys(groupedByGoal).forEach(goalId => {
+                const milestonesInGroup = groupedByGoal[goalId];
+                const goal = allGoals.find(g => g.id === goalId);
+                const goalTitle = goal ? goal.title : (goalId === 'no-goal' ? 'No Goal' : 'Unknown Goal');
+
+                console.log(`  Group "${goalTitle}": ${milestonesInGroup.length} milestones`);
+
+                const groupHtml = `
+                    <div class="milestone-group">
+                        <div class="group-header">
+                            <h2 ${goal ? `onclick="window.location.href='goal-detail.html?id=${goalId}'" style="cursor: pointer;"` : ''}>${escapeHtml(goalTitle)}</h2>
+                            <span class="milestone-count-badge">${milestonesInGroup.length} milestone${milestonesInGroup.length !== 1 ? 's' : ''}</span>
+                        </div>
+                        ${milestonesInGroup.map(milestone => renderMilestoneCard(milestone)).join('')}
+                    </div>
+                `;
+                container.innerHTML += groupHtml;
+            });
+
+            console.log('✅ Render complete. Container HTML length:', container.innerHTML.length);
+        }
+
+        function renderMilestoneCard(milestone) {
+            const statusClass = milestone.status.toLowerCase().replace('_', '-');
+            const statusText = milestone.status.replace('_', ' ');
+
+            return `
+                <div class="milestone-item" onclick="viewMilestone('${milestone.id}')">
+                    <div class="milestone-icon ${statusClass}">◉</div>
+                    <div class="milestone-content">
+                        <h3>${escapeHtml(milestone.title)}</h3>
+                        <p>${escapeHtml(milestone.description || 'No description')}</p>
+                        <div class="milestone-meta">
+                            <span class="meta-item">📅 Due: ${formatDate(milestone.due_date)}</span>
+                        </div>
+                        <div class="progress-section">
+                            <div class="progress-bar-horizontal">
+                                <div class="progress-fill-horizontal" style="width: ${milestone.progress || 0}%"></div>
+                            </div>
+                            <span class="progress-percent">${milestone.progress || 0}%</span>
+                        </div>
+                    </div>
+                    <span class="status-badge ${statusClass}">${statusText}</span>
+                </div>
+            `;
+        }
+
+        // Open Add Milestone Modal
+        window.openAddMilestoneModal = function () {
+            currentMilestoneId = null;
+            document.getElementById('modalTitle').textContent = 'New Milestone';
+            document.getElementById('submitBtnText').textContent = 'Create Milestone';
+            document.getElementById('milestoneForm').reset();
+
+            // Check if we came from a goal (URL parameter)
+            const urlParams = new URLSearchParams(window.location.search);
+            const goalId = urlParams.get('goal');
+            if (goalId) {
+                document.getElementById('milestoneGoal').value = goalId;
+            }
+
+            document.getElementById('milestoneModal').style.display = 'flex';
+        };
+
+        // Close Modal
+        window.closeMilestoneModal = function () {
+            document.getElementById('milestoneModal').style.display = 'none';
+        };
+
+        // Helper function to update goal milestone count
+        async function updateGoalMilestoneCount(goalId) {
+            try {
+                // Count actual milestones for this goal
+                const milestones = await supabase.select('milestones', { goal_id: goalId });
+                const actualCount = milestones?.length || 0;
+
+                // Update the goal's milestone_count field
+                await supabase.update('goals', goalId, { milestone_count: actualCount });
+
+                console.log(`✅ Updated goal ${goalId} milestone count to ${actualCount}`);
+            } catch (error) {
+                console.error('Error updating goal milestone count:', error);
+            }
+        }
+
+        // Handle Form Submit
+        window.handleMilestoneSubmit = async function (event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnLoader = document.getElementById('submitBtnLoader');
+
+            submitBtn.disabled = true;
+            submitBtnText.style.display = 'none';
+            submitBtnLoader.style.display = 'inline-block';
+
+            try {
+                const formData = new FormData(event.target);
+                const milestoneData = {
+                    title: formData.get('title'),
+                    description: formData.get('description') || '',
+                    goal_id: formData.get('goal_id'),
+                    owner: formData.get('owner'),
+                    user_id: currentUser.id,
+                    due_date: formData.get('due_date'),
+                    status: formData.get('status'),
+                    progress: parseInt(formData.get('progress')) || 0
+                };
+
+                if (currentMilestoneId) {
+                    // Update existing milestone
+                    await supabase.update('milestones', currentMilestoneId, milestoneData);
+                    showToast('Milestone updated successfully', 'success');
+                } else {
+                    // Create new milestone
+                    await supabase.insert('milestones', milestoneData);
+                    showToast('Milestone created successfully', 'success');
+
+                    // Update the goal's milestone count
+                    if (milestoneData.goal_id) {
+                        await updateGoalMilestoneCount(milestoneData.goal_id);
+                    }
+                }
+
+                closeMilestoneModal();
+                // Reload in correct order: goals first, then milestones
+                await loadGoals(); // Refresh goal list (for counts and new goals)
+                await loadMilestones(); // This will trigger filterMilestones()
+            } catch (error) {
+                console.error('Error saving milestone:', error);
+                showToast('Failed to save milestone', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.style.display = 'inline';
+                submitBtnLoader.style.display = 'none';
+            }
+        };
+
+        // View Milestone Detail
+        window.viewMilestone = function (milestoneId) {
+            window.location.href = `milestone-detail.html?id=${milestoneId}`;
+        };
+
+        // Utility Functions
+        function showLoading(show) {
+            if (show) {
+                // Show loading, hide everything else
+                document.getElementById('loadingState').style.display = 'flex';
+                document.getElementById('milestonesContainer').style.display = 'none';
+                document.getElementById('emptyState').style.display = 'none';
+            } else {
+                // Just hide loading spinner - don't touch other elements
+                // Let renderMilestones() or showEmptyState() control visibility
+                document.getElementById('loadingState').style.display = 'none';
+            }
+        }
+
+        function showEmptyState() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('milestonesContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'flex';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Logout
+        window.logout = function () {
+            supabase.signOut();
+            window.location.href = '../auth/login.html';
+        };
+
+        // Close modal on outside click
+        window.onclick = function (event) {
+            const modal = document.getElementById('milestoneModal');
+            if (event.target === modal) {
+                closeMilestoneModal();
+            }
+        };
+
     </script>
 
 

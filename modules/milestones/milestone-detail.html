@@ -373,6 +373,198 @@
         </div>
     </div>
 
+    <script type="module">
+        import supabase from '../../assets/js/config/supabase-client.js';
+
+        let currentUser = null;
+        let currentMilestone = null;
+        let teamMembers = [];
+        let allGoals = [];
+        let milestoneId = null;
+
+        // Get milestone ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        milestoneId = urlParams.get('id');
+
+        if (!milestoneId) {
+            window.location.href = '../milestones/milestones.html';
+        }
+
+        // Check authentication and load milestone
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                currentUser = await supabase.getCurrentUser();
+                if (!currentUser) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                // Update UI with user info
+                document.getElementById('userNameSmall').textContent = currentUser.email;
+                document.getElementById('userAvatarSmall').textContent = currentUser.email.charAt(0).toUpperCase();
+                document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+
+                // Load data
+                await loadTeamMembers();
+                await loadGoals();
+                await loadMilestoneDetails();
+
+                console.log('✅ Milestone detail page loaded successfully!');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showToast('Failed to load page', 'error');
+            }
+        });
+
+        // Load Team Members for Owner Dropdown
+        async function loadTeamMembers() {
+            try {
+                const result = await supabase.getAllTeamMembers();
+
+                if (Array.isArray(result)) {
+                    teamMembers = result;
+                } else {
+                    console.warn('Team members result is not an array:', result);
+                    teamMembers = [];
+                }
+
+                console.log('✅ Loaded team members:', teamMembers.length);
+
+                // Always add current user if not already in list
+                const currentUserExists = teamMembers.some(m => m.email === currentUser.email);
+                if (!currentUserExists && currentUser) {
+                    teamMembers.push({
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        display_name: currentUser.email.split('@')[0]
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                // If loading fails, add at least current user
+                teamMembers = [{
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    display_name: currentUser.email.split('@')[0]
+                }];
+            }
+        }
+
+        function populateOwnerDropdown(selectedOwner = null) {
+            const ownerSelect = document.getElementById('editMilestoneOwner');
+
+            // Clear existing options
+            ownerSelect.innerHTML = '<option value="">Select owner...</option>';
+
+            // Add team members as options
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                const displayName = member.display_name || member.full_name || member.email.split('@')[0];
+                option.value = displayName;
+                option.textContent = displayName;
+
+                // Pre-select the specified owner
+                if (selectedOwner && displayName === selectedOwner) {
+                    option.selected = true;
+                }
+
+                ownerSelect.appendChild(option);
+            });
+
+            console.log('✅ Owner dropdown populated with', teamMembers.length, 'users');
+        }
+
+        // Load Goals for Goal Dropdown
+        async function loadGoals() {
+            try {
+                allGoals = await supabase.select('goals');
+                console.log('✅ Loaded goals:', allGoals?.length || 0);
+
+                // Populate goal dropdown in edit modal
+                const goalSelect = document.getElementById('editMilestoneGoal');
+
+                // Clear existing options
+                goalSelect.innerHTML = '<option value="">Select a goal...</option>';
+
+                if (allGoals && allGoals.length > 0) {
+                    allGoals.forEach(goal => {
+                        const option = document.createElement('option');
+                        option.value = goal.id;
+                        option.textContent = goal.title;
+                        goalSelect.appendChild(option);
+                    });
+                } else {
+                    goalSelect.innerHTML = '<option value="">No goals available</option>';
+                }
+            } catch (error) {
+                console.error('Error loading goals:', error);
+                const goalSelect = document.getElementById('editMilestoneGoal');
+                goalSelect.innerHTML = '<option value="">Error loading goals</option>';
+            }
+        }
+
+        async function loadMilestoneDetails() {
+            try {
+                // Fetch milestone
+                const milestones = await supabase.select('milestones', { id: milestoneId });
+
+                if (!milestones || milestones.length === 0) {
+                    throw new Error('Milestone not found');
+                }
+
+                currentMilestone = milestones[0];
+                displayMilestoneDetails(currentMilestone);
+
+                // Load related data
+                await loadTasks();
+
+            } catch (error) {
+                console.error('Error loading milestone:', error);
+                showToast('Failed to load milestone details', 'error');
+                setTimeout(() => {
+                    window.location.href = '../milestones/milestones.html';
+                }, 2000);
+            }
+        }
+
+        function displayMilestoneDetails(milestone) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('milestoneDetailContent').style.display = 'block';
+
+            // Update page title
+            document.title = `${milestone.title} - FlowBit`;
+
+            // Update header
+            document.getElementById('milestoneTitle').textContent = milestone.title;
+            document.getElementById('milestoneDueDate').textContent = formatDate(milestone.due_date);
+            document.getElementById('milestoneOwnerDisplay').textContent = milestone.owner || 'Unknown';
+
+            // Load goal name and make it clickable
+            loadGoalName(milestone.goal_id);
+
+            // Update progress circle
+            const progress = milestone.progress || 0;
+            const circle = document.getElementById('progressCircle');
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference - (progress / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+            document.getElementById('progressPercent').textContent = `${progress}%`;
+
+            // Update status badge
+            const statusBadge = document.getElementById('milestoneStatusBadge');
+            statusBadge.textContent = milestone.status.replace('_', ' ');
+            statusBadge.className = 'status-badge-large ' + milestone.status;
+
+            // Update stats
+            document.getElementById('milestoneProgressStat').textContent = `${progress}%`;
+            document.getElementById('milestoneStatusStat').textContent = milestone.status.replace('_', ' ');
+
+            // Update description
+            const descElement = document.getElementById('milestoneDescription');
+            descElement.textContent = milestone.description || 'No description provided.';
+        }
+    </script>
+
 </body>
 
 </html>
