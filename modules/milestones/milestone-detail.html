@@ -563,6 +563,322 @@
             const descElement = document.getElementById('milestoneDescription');
             descElement.textContent = milestone.description || 'No description provided.';
         }
+
+        async function loadGoalName(goalId) {
+            if (!goalId) {
+                document.getElementById('milestoneGoal').textContent = 'No goal';
+                document.getElementById('milestoneGoalLink').style.display = 'none';
+                return;
+            }
+
+            try {
+                const goals = await supabase.select('goals', { id: goalId });
+                if (goals && goals.length > 0) {
+                    document.getElementById('milestoneGoal').textContent = goals[0].title;
+                    document.getElementById('milestoneGoalLink').href = `goal-detail.html?id=${goalId}`;
+                }
+            } catch (error) {
+                console.error('Error loading goal:', error);
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const tasks = await supabase.select('tasks', { milestone_id: milestoneId });
+
+                // Update task count
+                document.getElementById('milestoneTaskCount').textContent = tasks?.length || 0;
+
+                if (tasks && tasks.length > 0) {
+                    renderTasks(tasks);
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        function renderTasks(tasks) {
+            const container = document.getElementById('tasksContainer');
+
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-message">
+                        <span class="empty-icon">✓</span>
+                        <p>No tasks yet. Create tasks for this milestone.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => {
+                // Find assignee info
+                const assignee = teamMembers.find(m => m.id === task.assignee_id);
+                const assigneeName = assignee ? (assignee.display_name || assignee.full_name || assignee.email.split('@')[0]) : 'Unassigned';
+                const assigneeInitials = assigneeName.substring(0, 2).toUpperCase();
+
+                // Status icon and color
+                const statusIcons = {
+                    'TODO': '○',
+                    'IN_PROGRESS': '◐',
+                    'COMPLETED': '●',
+                    'BLOCKED': '⊗'
+                };
+                const statusIcon = statusIcons[task.status] || '○';
+
+                // Priority badge style
+                const priorityClass = task.priority.toLowerCase();
+
+                return `
+                    <div class="task-card" style="cursor: default;">
+                        <div class="task-icon ${task.status.toLowerCase()}">
+                            ${statusIcon}
+                        </div>
+                        <div class="task-info">
+                            <h4 class="task-title ${task.status === 'COMPLETED' ? 'completed' : ''}">${escapeHtml(task.title)}</h4>
+                            <p class="task-description">${escapeHtml(task.description || 'No description')}</p>
+                            <div class="task-meta">
+                                <span class="meta-item">
+                                    <span class="assignee-avatar">${assigneeInitials}</span>
+                                    ${escapeHtml(assigneeName)}
+                                </span>
+                                ${task.due_date ? `<span class="meta-item">📅 ${formatDate(task.due_date)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="task-badges">
+                            <span class="priority-badge ${priorityClass}">${task.priority}</span>
+                            <span class="status-badge ${task.status.toLowerCase().replace('_', '-')}">${task.status.replace('_', ' ')}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Edit Milestone
+        window.editMilestone = function () {
+            if (!currentMilestone) return;
+
+            document.getElementById('editMilestoneTitle').value = currentMilestone.title;
+            document.getElementById('editMilestoneDescription').value = currentMilestone.description || '';
+            document.getElementById('editMilestoneGoal').value = currentMilestone.goal_id || '';
+            populateOwnerDropdown(currentMilestone.owner);
+            document.getElementById('editMilestoneDueDate').value = currentMilestone.due_date;
+            document.getElementById('editMilestoneStatus').value = currentMilestone.status;
+            document.getElementById('editMilestoneProgress').value = currentMilestone.progress || 0;
+
+            document.getElementById('editMilestoneModal').style.display = 'flex';
+        };
+
+        window.closeEditModal = function () {
+            document.getElementById('editMilestoneModal').style.display = 'none';
+        };
+
+        window.handleEditSubmit = async function (event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('editSubmitBtn');
+            const submitBtnText = document.getElementById('editSubmitBtnText');
+            const submitBtnLoader = document.getElementById('editSubmitBtnLoader');
+
+            submitBtn.disabled = true;
+            submitBtnText.style.display = 'none';
+            submitBtnLoader.style.display = 'inline-block';
+
+            try {
+                const formData = new FormData(event.target);
+                const milestoneData = {
+                    title: formData.get('title'),
+                    description: formData.get('description') || '',
+                    owner: formData.get('owner'),
+                    due_date: formData.get('due_date'),
+                    status: formData.get('status'),
+                    progress: parseInt(formData.get('progress')) || 0,
+                    updated_at: new Date().toISOString()
+                };
+
+                await supabase.update('milestones', milestoneId, milestoneData);
+
+                showToast('Milestone updated successfully', 'success');
+                closeEditModal();
+                await loadMilestoneDetails();
+            } catch (error) {
+                console.error('Error updating milestone:', error);
+                showToast('Failed to update milestone', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.style.display = 'inline';
+                submitBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Delete Milestone
+        window.confirmDeleteMilestone = function () {
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        };
+
+        window.closeDeleteModal = function () {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        window.deleteMilestone = async function () {
+            const deleteBtn = document.querySelector('#deleteConfirmModal .btn-danger');
+            const deleteBtnText = document.getElementById('deleteBtnText');
+            const deleteBtnLoader = document.getElementById('deleteBtnLoader');
+
+            deleteBtn.disabled = true;
+            deleteBtnText.style.display = 'none';
+            deleteBtnLoader.style.display = 'inline-block';
+
+            try {
+                const goalId = currentMilestone.goal_id;
+
+                await supabase.delete('milestones', milestoneId);
+
+                // Update the goal's milestone count after deletion
+                if (goalId) {
+                    const milestones = await supabase.select('milestones', { goal_id: goalId });
+                    const actualCount = milestones?.length || 0;
+                    await supabase.update('goals', goalId, { milestone_count: actualCount });
+                    console.log(`✅ Updated goal milestone count to ${actualCount} after deletion`);
+                }
+
+                showToast('Milestone deleted successfully', 'success');
+                setTimeout(() => {
+                    window.location.href = '../milestones/milestones.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error deleting milestone:', error);
+                showToast('Failed to delete milestone', 'error');
+                deleteBtn.disabled = false;
+                deleteBtnText.style.display = 'inline';
+                deleteBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Add Task
+        window.addTask = function () {
+            if (!currentMilestone) {
+                showToast('Milestone not loaded', 'error');
+                return;
+            }
+
+            // Reset form
+            document.getElementById('addTaskForm').reset();
+
+            // Set locked milestone
+            const milestoneSelect = document.getElementById('taskMilestone');
+            milestoneSelect.innerHTML = `<option value="${milestoneId}" selected>${escapeHtml(currentMilestone.title)}</option>`;
+
+            // Populate owners dropdown
+            populateTaskOwnersDropdown();
+
+            // Set default due date (tomorrow)
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('taskDueDate').value = tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('addTaskModal').style.display = 'flex';
+        };
+
+        function populateTaskOwnersDropdown(selectedOwnerId = null) {
+            const ownerSelect = document.getElementById('taskOwner');
+            ownerSelect.innerHTML = '<option value="">Select owner...</option>';
+
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                const displayName = member.display_name || member.full_name || member.email.split('@')[0];
+                option.value = member.id;
+                option.textContent = displayName;
+
+                // Pre-select current user or specified owner
+                if (selectedOwnerId ? (member.id === selectedOwnerId) : (member.email === currentUser.email)) {
+                    option.selected = true;
+                }
+
+                ownerSelect.appendChild(option);
+            });
+        }
+
+        window.closeAddTaskModal = function () {
+            document.getElementById('addTaskModal').style.display = 'none';
+        };
+
+        window.handleAddTaskSubmit = async function (event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('addTaskSubmitBtn');
+            const submitBtnText = document.getElementById('addTaskSubmitBtnText');
+            const submitBtnLoader = document.getElementById('addTaskSubmitBtnLoader');
+
+            submitBtn.disabled = true;
+            submitBtnText.style.display = 'none';
+            submitBtnLoader.style.display = 'inline-block';
+
+            try {
+                const formData = new FormData(event.target);
+                const taskData = {
+                    title: formData.get('title'),
+                    description: formData.get('description') || '',
+                    milestone_id: milestoneId,
+                    goal_id: currentMilestone.goal_id,
+                    user_id: currentUser.id,
+                    assignee_id: formData.get('assignee_id'),
+                    status: formData.get('status'),
+                    priority: formData.get('priority'),
+                    due_date: formData.get('due_date'),
+                    metadata: { progress: parseInt(formData.get('progress')) || 0 }
+                };
+
+                await supabase.insert('tasks', taskData);
+
+                showToast('Task created successfully', 'success');
+                closeAddTaskModal();
+                await loadTasks();
+            } catch (error) {
+                console.error('Error creating task:', error);
+                showToast('Failed to create task', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.style.display = 'inline';
+                submitBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Utility Functions
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Logout function
+        window.logout = function () {
+            supabase.signOut();
+            window.location.href = '../auth/login.html';
+        };
     </script>
 
 </body>

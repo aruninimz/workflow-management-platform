@@ -203,6 +203,154 @@ class MilestoneManager {
         }
     }
 
+    // ============================================
+    // Statistics & Analytics
+    // ============================================
 
+    getMilestoneStats() {
+        const milestones = this.getMilestones();
+        const now = new Date().getTime();
+
+        const stats = {
+            total: milestones.length,
+            active: milestones.filter(m => m.status === 'IN_PROGRESS').length,
+            completed: milestones.filter(m => m.status === 'COMPLETED').length,
+            notStarted: milestones.filter(m => m.status === 'NOT_STARTED').length,
+            blocked: milestones.filter(m => m.status === 'BLOCKED').length,
+            overdue: milestones.filter(m => {
+                const dueDate = new Date(m.dueDate).getTime();
+                return dueDate < now && m.status !== 'COMPLETED';
+            }).length,
+            avgProgress: 0,
+            completionRate: 0
+        };
+
+        if (stats.total > 0) {
+            const totalProgress = milestones.reduce((sum, m) => sum + m.progress, 0);
+            stats.avgProgress = Math.round(totalProgress / stats.total);
+            stats.completionRate = Math.round((stats.completed / stats.total) * 100);
+        }
+
+        return stats;
+    }
+
+    getMilestonesByGoal(goalId) {
+        return this.getMilestones({ goalId });
+    }
+
+    getUpcomingMilestones(days = 7) {
+        const milestones = this.getMilestones();
+        const now = new Date();
+        const future = new Date(now.getTime() + (days * 24 * 60 * 60 * 1000));
+
+        return milestones.filter(m => {
+            const dueDate = new Date(m.dueDate);
+            return dueDate >= now && dueDate <= future && m.status !== 'COMPLETED';
+        }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    }
+
+    getOverdueMilestones() {
+        const milestones = this.getMilestones();
+        const now = new Date().getTime();
+
+        return milestones.filter(m => {
+            const dueDate = new Date(m.dueDate).getTime();
+            return dueDate < now && m.status !== 'COMPLETED';
+        });
+    }
+
+    // ============================================
+    // Export for Dashboard
+    // ============================================
+
+    exportMilestoneData() {
+        const stats = this.getMilestoneStats();
+        const milestones = this.getMilestones();
+
+        return {
+            stats,
+            recentMilestones: milestones.slice(0, 5),
+            upcomingMilestones: this.getUpcomingMilestones(7),
+            overdueMilestones: this.getOverdueMilestones(),
+            completionRate: stats.completionRate
+        };
+    }
+
+    // ============================================
+    // Validation & Helpers
+    // ============================================
+
+    validate(milestone) {
+        if (!milestone.title || milestone.title.trim() === '') {
+            throw new Error('Milestone title is required');
+        }
+
+        if (!milestone.goalId) {
+            throw new Error('Goal selection is required');
+        }
+
+        if (!milestone.dueDate) {
+            throw new Error('Due date is required');
+        }
+
+        if (!['NOT_STARTED', 'IN_PROGRESS', 'COMPLETED', 'BLOCKED'].includes(milestone.status)) {
+            throw new Error('Invalid status');
+        }
+
+        if (milestone.progress < 0 || milestone.progress > 100) {
+            throw new Error('Progress must be between 0 and 100');
+        }
+
+        return true;
+    }
+
+    getGoalTitle(goalId) {
+        if (window.goalManager) {
+            const goal = window.goalManager.getGoal(goalId);
+            return goal ? goal.title : 'Unknown Goal';
+        }
+        return 'Unknown Goal';
+    }
+
+    generateId() {
+        return 'milestone_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    }
+
+    getStatusColor(status) {
+        const colors = {
+            'NOT_STARTED': 'gray',
+            'IN_PROGRESS': 'blue',
+            'COMPLETED': 'green',
+            'BLOCKED': 'red'
+        };
+        return colors[status] || 'gray';
+    }
+
+    getStatusLabel(status) {
+        const labels = {
+            'NOT_STARTED': 'Not Started',
+            'IN_PROGRESS': 'In Progress',
+            'COMPLETED': 'Completed',
+            'BLOCKED': 'Blocked'
+        };
+        return labels[status] || status;
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    getDaysUntilDue(dueDate) {
+        const now = new Date();
+        const due = new Date(dueDate);
+        const diffTime = due - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        return diffDays;
+    }
 
 }
