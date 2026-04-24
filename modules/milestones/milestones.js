@@ -354,3 +354,205 @@ class MilestoneManager {
     }
 
 }
+
+// Initialize global instance
+const milestoneManager = new MilestoneManager();
+window.milestoneManager = milestoneManager;
+
+// ============================================
+// UI Functions
+// ============================================
+
+function loadMilestones() {
+    const filters = {
+        search: document.getElementById('searchInput')?.value || '',
+        goalId: document.getElementById('goalFilter')?.value || '',
+        status: document.getElementById('statusFilter')?.value || '',
+        sort: document.getElementById('sortFilter')?.value || 'dueDate'
+    };
+
+    const milestones = milestoneManager.getMilestones(filters);
+    const container = document.getElementById('milestonesList');
+    const emptyState = document.getElementById('emptyState');
+
+    if (!container) return;
+
+    if (milestones.length === 0) {
+        container.classList.add('hidden');
+        emptyState?.classList.remove('hidden');
+        return;
+    }
+
+    container.classList.remove('hidden');
+    emptyState?.classList.add('hidden');
+
+    container.innerHTML = milestones.map(milestone => `
+        <div class="milestone-card ${milestone.isOverdue ? 'overdue' : ''}" data-id="${milestone.id}">
+            <div class="milestone-header">
+                <div class="milestone-title-section">
+                    <h3 class="milestone-title">${milestone.title}</h3>
+                    <div class="milestone-meta">
+                        <span class="milestone-meta-item">
+                            <i class="fas fa-bullseye"></i>
+                            ${milestone.goalTitle}
+                        </span>
+                        <span class="milestone-meta-item">
+                            <i class="fas fa-calendar"></i>
+                            Due: ${milestoneManager.formatDate(milestone.dueDate)}
+                        </span>
+                        ${milestone.isOverdue ? `
+                            <span class="milestone-meta-item text-red-600">
+                                <i class="fas fa-exclamation-circle"></i>
+                                Overdue
+                            </span>
+                        ` : `
+                            <span class="milestone-meta-item">
+                                <i class="fas fa-clock"></i>
+                                ${milestoneManager.getDaysUntilDue(milestone.dueDate)} days
+                            </span>
+                        `}
+                    </div>
+                </div>
+                <div class="milestone-actions">
+                    <button class="milestone-btn milestone-btn-edit" onclick="editMilestone('${milestone.id}')" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="milestone-btn milestone-btn-delete" onclick="deleteMilestoneConfirm('${milestone.id}')" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+            
+            ${milestone.description ? `
+                <p class="milestone-description">${milestone.description}</p>
+            ` : ''}
+            
+            <div class="milestone-progress-section">
+                <div class="progress-header">
+                    <span class="progress-label">Progress</span>
+                    <span class="progress-value">${milestone.progress}%</span>
+                </div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" style="width: ${milestone.progress}%"></div>
+                </div>
+            </div>
+            
+            <div class="milestone-badges">
+                <span class="badge badge-status ${milestone.status.toLowerCase().replace('_', '-')}">
+                    ${milestoneManager.getStatusLabel(milestone.status)}
+                </span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function loadMilestoneStats() {
+    const stats = milestoneManager.getMilestoneStats();
+
+    document.getElementById('totalMilestones').textContent = stats.total;
+    document.getElementById('activeMilestones').textContent = stats.active;
+    document.getElementById('completedMilestones').textContent = stats.completed;
+    document.getElementById('overdueMilestones').textContent = stats.overdue;
+}
+
+function populateGoalDropdowns() {
+    const goalFilter = document.getElementById('goalFilter');
+    const goalSelect = document.getElementById('milestoneGoalId');
+
+    if (!window.goalManager) return;
+
+    const goals = window.goalManager.getGoals();
+
+    // Populate filter dropdown
+    if (goalFilter) {
+        goalFilter.innerHTML = '<option value="">All Goals</option>' +
+            goals.map(goal => `<option value="${goal.id}">${goal.title}</option>`).join('');
+    }
+
+    // Populate form dropdown
+    if (goalSelect) {
+        goalSelect.innerHTML = '<option value="">Select a goal...</option>' +
+            goals.map(goal => `<option value="${goal.id}">${goal.title}</option>`).join('');
+    }
+}
+
+function applyFilters() {
+    loadMilestones();
+}
+
+function openCreateModal() {
+    document.getElementById('modalTitle').textContent = 'Create Milestone';
+    document.getElementById('milestoneForm').reset();
+    document.getElementById('milestoneId').value = '';
+    document.getElementById('progressValue').textContent = '0%';
+    document.getElementById('milestoneModal').classList.add('active');
+}
+
+function editMilestone(id) {
+    const milestone = milestoneManager.getMilestone(id);
+    if (!milestone) return;
+
+    document.getElementById('modalTitle').textContent = 'Edit Milestone';
+    document.getElementById('milestoneId').value = milestone.id;
+    document.getElementById('milestoneTitle').value = milestone.title;
+    document.getElementById('milestoneDescription').value = milestone.description || '';
+    document.getElementById('milestoneGoalId').value = milestone.goalId;
+    document.getElementById('milestoneDueDate').value = milestone.dueDate;
+    document.getElementById('milestoneStatus').value = milestone.status;
+    document.getElementById('milestoneProgress').value = milestone.progress;
+    document.getElementById('progressValue').textContent = milestone.progress + '%';
+    document.getElementById('milestoneModal').classList.add('active');
+}
+
+function closeMilestoneModal() {
+    document.getElementById('milestoneModal').classList.remove('active');
+}
+
+function handleMilestoneSubmit(e) {
+    e.preventDefault();
+
+    const id = document.getElementById('milestoneId').value;
+    const milestoneData = {
+        title: document.getElementById('milestoneTitle').value,
+        description: document.getElementById('milestoneDescription').value,
+        goalId: document.getElementById('milestoneGoalId').value,
+        dueDate: document.getElementById('milestoneDueDate').value,
+        status: document.getElementById('milestoneStatus').value,
+        progress: parseInt(document.getElementById('milestoneProgress').value)
+    };
+
+    try {
+        if (id) {
+            milestoneManager.updateMilestone(id, milestoneData);
+        } else {
+            milestoneManager.createMilestone(milestoneData);
+        }
+
+        closeMilestoneModal();
+        loadMilestones();
+        loadMilestoneStats();
+    } catch (error) {
+        console.error('Error saving milestone:', error);
+    }
+}
+
+function deleteMilestoneConfirm(id) {
+    const milestone = milestoneManager.getMilestone(id);
+    if (!milestone) return;
+
+    if (confirm(`Are you sure you want to delete milestone "${milestone.title}"?`)) {
+        milestoneManager.deleteMilestone(id);
+        loadMilestones();
+        loadMilestoneStats();
+    }
+}
+
+// Close modal on outside click
+document.addEventListener('click', (e) => {
+    const modal = document.getElementById('milestoneModal');
+    if (e.target === modal) {
+        closeMilestoneModal();
+    }
+});
+
+console.log('✅ Milestones module loaded');
