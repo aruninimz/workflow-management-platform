@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Milestone Details - FlowBit</title>
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/goals.css">
+    <link rel="stylesheet" href="../../assets/css/milestones.css">
+    <link rel="stylesheet" href="../../assets/css/milestone-detail.css">
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon">≋</div>
+            <span>FlowBit</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="../dashboard/dashboard.html" class="nav-item">
+                <span class="icon">▦</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="../goals/goals.html" class="nav-item">
+                <span class="icon">⚑</span>
+                <span>Goals</span>
+            </a>
+            <a href="../milestones/milestones.html" class="nav-item active">
+                <span class="icon">◉</span>
+                <span>Milestones</span>
+            </a>
+            <a href="../tasks/tasks.html" class="nav-item">
+                <span class="icon">☰</span>
+                <span>Tasks</span>
+            </a>
+            <a href="../risk-engine/risk-engine.html" class="nav-item">
+                <span class="icon">⚠</span>
+                <span>Risk Engine</span>
+            </a>
+            <a href="../insights/insights.html" class="nav-item">
+                <span class="icon">◐</span>
+                <span>Insights</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatarSmall">JD</div>
+                <div class="user-info">
+                    <div class="user-name-small" id="userNameSmall">John Doe</div>
+                    <div class="user-role">Project Manager</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <span class="icon">→</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search..." id="searchInput">
+                </div>
+                <div class="notification-bell">
+                    🔔
+                    <span class="badge">3</span>
+                </div>
+                <button class="theme-toggle">⚙️</button>
+                <div class="user-avatar" id="userAvatar">JD</div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Back Button -->
+            <div class="back-button-container">
+                <a href="../milestones/milestones.html" class="back-button">
+                    <span class="icon">←</span>
+                    Back to Milestones
+                </a>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state" style="display: flex;">
+                <div class="spinner"></div>
+                <p>Loading milestone details...</p>
+            </div>
+
+            <!-- Milestone Detail Content -->
+            <div id="milestoneDetailContent" style="display: none;">
+                <!-- Milestone Header Card -->
+                <div class="detail-header-card">
+                    <div class="detail-header-top">
+                        <div class="detail-title-section">
+                            <h1 id="milestoneTitle" class="detail-title">Milestone Title</h1>
+                            <div class="detail-meta">
+                                <span class="meta-item">
+                                    <span class="meta-icon">🎯</span>
+                                    <span>Goal: <a href="#" id="milestoneGoalLink" class="goal-link"><strong
+                                                id="milestoneGoal">-</strong></a></span>
+                                </span>
+                                <span class="meta-item">
+                                    <span class="meta-icon">👤</span>
+                                    <span>Owner: <strong id="milestoneOwnerDisplay">-</strong></span>
+                                </span>
+                                <span class="meta-item">
+                                    <span class="meta-icon">📅</span>
+                                    <span>Due: <strong id="milestoneDueDate">-</strong></span>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="detail-actions">
+                            <button class="btn-secondary-small" onclick="editMilestone()">
+                                <span class="icon">✏️</span>
+                                Edit Milestone
+                            </button>
+                            <button class="btn-danger-small" onclick="confirmDeleteMilestone()">
+                                <span class="icon">🗑️</span>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Progress Circle and Status Badge -->
+                    <div class="detail-header-bottom">
+                        <div class="progress-circle-container">
+                            <svg class="progress-circle" width="120" height="120">
+                                <circle class="progress-circle-bg" cx="60" cy="60" r="50"></circle>
+                                <circle class="progress-circle-fill" id="progressCircle" cx="60" cy="60" r="50">
+                                </circle>
+                            </svg>
+                            <div class="progress-text">
+                                <span class="progress-percent" id="progressPercent">0%</span>
+                                <span class="progress-label">Progress</span>
+                            </div>
+                        </div>
+                        <div class="status-badge-large" id="milestoneStatusBadge">PENDING</div>
+                    </div>
+                </div>
+
+                <!-- Stats Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-label">Progress</div>
+                        <div class="stat-value" id="milestoneProgressStat">0%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Status</div>
+                        <div class="stat-value" id="milestoneStatusStat">Pending</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-label">Tasks</div>
+                        <div class="stat-value" id="milestoneTaskCount">0</div>
+                    </div>
+                </div>
+
+                <!-- Milestone Description -->
+                <div class="detail-section">
+                    <h2 class="section-title">Description</h2>
+                    <div class="section-content">
+                        <p id="milestoneDescription">No description provided.</p>
+                    </div>
+                </div>
+
+                <!-- Related Tasks -->
+                <div class="detail-section">
+                    <div class="section-header">
+                        <h2 class="section-title">Related Tasks</h2>
+                        <button class="btn-secondary-small" onclick="addTask()">
+                            <span class="icon">+</span>
+                            Add Task
+                        </button>
+                    </div>
+                    <div id="tasksContainer" class="tasks-list">
+                        <!-- Tasks will be loaded here -->
+                        <div class="empty-message">
+                            <span class="empty-icon">✓</span>
+                            <p>No tasks yet. Create tasks to break down your milestone into actionable items.</p>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Milestone Modal -->
+    <div id="editMilestoneModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Edit Milestone</h2>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <form id="editMilestoneForm" onsubmit="handleEditSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editMilestoneTitle">Title <span class="required">*</span></label>
+                        <input type="text" id="editMilestoneTitle" name="title" required maxlength="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editMilestoneDescription">Description</label>
+                        <textarea id="editMilestoneDescription" name="description" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editMilestoneGoal">Goal <span class="required">*</span></label>
+                        <select id="editMilestoneGoal" name="goal_id" required disabled
+                            style="background-color: #f1f5f9; cursor: not-allowed;">
+                            <option value="">Loading goals...</option>
+                            <!-- Goals will be loaded dynamically -->
+                        </select>
+                        <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">💡 Goal cannot
+                            be changed after milestone creation</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editMilestoneOwner">Owner <span class="required">*</span></label>
+                        <select id="editMilestoneOwner" name="owner" required>
+                            <option value="">Select owner...</option>
+                            <!-- Owners will be loaded dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editMilestoneDueDate">Due Date <span class="required">*</span></label>
+                            <input type="date" id="editMilestoneDueDate" name="due_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editMilestoneStatus">Status</label>
+                            <select id="editMilestoneStatus" name="status">
+                                <option value="PENDING">Pending</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="BLOCKED">Blocked</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="editMilestoneProgress">Progress (%)</label>
+                        <input type="number" id="editMilestoneProgress" name="progress" min="0" max="100" value="0">
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="editSubmitBtn">
+                        <span id="editSubmitBtnText">Update Milestone</span>
+                        <span id="editSubmitBtnLoader" class="btn-loader" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Delete Milestone</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="color: #64748b; margin-bottom: 16px;">
+                    Are you sure you want to delete this milestone? This action cannot be undone.
+                </p>
+                <p style="color: #ef4444; font-size: 13px;">
+                    ⚠️ All related tasks will also be deleted.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="deleteMilestone()">
+                    <span id="deleteBtnText">Delete Milestone</span>
+                    <span id="deleteBtnLoader" class="btn-loader"
+                        style="display: none; border-top-color: white;"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="addTaskModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>Add Task</h2>
+                <button class="modal-close" onclick="closeAddTaskModal()">&times;</button>
+            </div>
+            <form id="addTaskForm" onsubmit="handleAddTaskSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="taskTitle">Title <span class="required">*</span></label>
+                        <input type="text" id="taskTitle" name="title" required maxlength="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskDescription">Description</label>
+                        <textarea id="taskDescription" name="description" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskMilestone">Milestone <span class="required">*</span></label>
+                        <select id="taskMilestone" name="milestone_id" required disabled
+                            style="background-color: #f1f5f9; cursor: not-allowed;">
+                            <option value="">Loading milestone...</option>
+                        </select>
+                        <small style="color: #64748b; font-size: 12px; margin-top: 4px; display: block;">
+                            💡 Milestone is locked to the current milestone
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskOwner">Assigned To <span class="required">*</span></label>
+                        <select id="taskOwner" name="assignee_id" required>
+                            <option value="">Select owner...</option>
+                            <!-- Owners will be loaded dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskDueDate">Due Date <span class="required">*</span></label>
+                            <input type="date" id="taskDueDate" name="due_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskStatus">Status</label>
+                            <select id="taskStatus" name="status">
+                                <option value="TODO" selected>To Do</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="BLOCKED">Blocked</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskPriority">Complexity</label>
+                            <select id="taskPriority" name="priority">
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="HIGH">High</option>
+                                <option value="CRITICAL">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskProgress">Progress (%)</label>
+                            <input type="number" id="taskProgress" name="progress" min="0" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeAddTaskModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="addTaskSubmitBtn">
+                        <span id="addTaskSubmitBtnText">Create Task</span>
+                        <span id="addTaskSubmitBtnLoader" class="btn-loader" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import supabase from '../../assets/js/config/supabase-client.js';
+
+        let currentUser = null;
+        let currentMilestone = null;
+        let teamMembers = [];
+        let allGoals = [];
+        let milestoneId = null;
+
+        // Get milestone ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        milestoneId = urlParams.get('id');
+
+        if (!milestoneId) {
+            window.location.href = '../milestones/milestones.html';
+        }
+
+        // Check authentication and load milestone
+        document.addEventListener('DOMContentLoaded', async function () {
+            try {
+                currentUser = await supabase.getCurrentUser();
+                if (!currentUser) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                // Update UI with user info
+                document.getElementById('userNameSmall').textContent = currentUser.email;
+                document.getElementById('userAvatarSmall').textContent = currentUser.email.charAt(0).toUpperCase();
+                document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+
+                // Load data
+                await loadTeamMembers();
+                await loadGoals();
+                await loadMilestoneDetails();
+
+                console.log('✅ Milestone detail page loaded successfully!');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showToast('Failed to load page', 'error');
+            }
+        });
+
+        // Load Team Members for Owner Dropdown
+        async function loadTeamMembers() {
+            try {
+                const result = await supabase.getAllTeamMembers();
+
+                if (Array.isArray(result)) {
+                    teamMembers = result;
+                } else {
+                    console.warn('Team members result is not an array:', result);
+                    teamMembers = [];
+                }
+
+                console.log('✅ Loaded team members:', teamMembers.length);
+
+                // Always add current user if not already in list
+                const currentUserExists = teamMembers.some(m => m.email === currentUser.email);
+                if (!currentUserExists && currentUser) {
+                    teamMembers.push({
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        display_name: currentUser.email.split('@')[0]
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                // If loading fails, add at least current user
+                teamMembers = [{
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    display_name: currentUser.email.split('@')[0]
+                }];
+            }
+        }
+
+        function populateOwnerDropdown(selectedOwner = null) {
+            const ownerSelect = document.getElementById('editMilestoneOwner');
+
+            // Clear existing options
+            ownerSelect.innerHTML = '<option value="">Select owner...</option>';
+
+            // Add team members as options
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                const displayName = member.display_name || member.full_name || member.email.split('@')[0];
+                option.value = displayName;
+                option.textContent = displayName;
+
+                // Pre-select the specified owner
+                if (selectedOwner && displayName === selectedOwner) {
+                    option.selected = true;
+                }
+
+                ownerSelect.appendChild(option);
+            });
+
+            console.log('✅ Owner dropdown populated with', teamMembers.length, 'users');
+        }
+
+        // Load Goals for Goal Dropdown
+        async function loadGoals() {
+            try {
+                allGoals = await supabase.select('goals');
+                console.log('✅ Loaded goals:', allGoals?.length || 0);
+
+                // Populate goal dropdown in edit modal
+                const goalSelect = document.getElementById('editMilestoneGoal');
+
+                // Clear existing options
+                goalSelect.innerHTML = '<option value="">Select a goal...</option>';
+
+                if (allGoals && allGoals.length > 0) {
+                    allGoals.forEach(goal => {
+                        const option = document.createElement('option');
+                        option.value = goal.id;
+                        option.textContent = goal.title;
+                        goalSelect.appendChild(option);
+                    });
+                } else {
+                    goalSelect.innerHTML = '<option value="">No goals available</option>';
+                }
+            } catch (error) {
+                console.error('Error loading goals:', error);
+                const goalSelect = document.getElementById('editMilestoneGoal');
+                goalSelect.innerHTML = '<option value="">Error loading goals</option>';
+            }
+        }
+
+        async function loadMilestoneDetails() {
+            try {
+                // Fetch milestone
+                const milestones = await supabase.select('milestones', { id: milestoneId });
+
+                if (!milestones || milestones.length === 0) {
+                    throw new Error('Milestone not found');
+                }
+
+                currentMilestone = milestones[0];
+                displayMilestoneDetails(currentMilestone);
+
+                // Load related data
+                await loadTasks();
+
+            } catch (error) {
+                console.error('Error loading milestone:', error);
+                showToast('Failed to load milestone details', 'error');
+                setTimeout(() => {
+                    window.location.href = '../milestones/milestones.html';
+                }, 2000);
+            }
+        }
+
+        function displayMilestoneDetails(milestone) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('milestoneDetailContent').style.display = 'block';
+
+            // Update page title
+            document.title = `${milestone.title} - FlowBit`;
+
+            // Update header
+            document.getElementById('milestoneTitle').textContent = milestone.title;
+            document.getElementById('milestoneDueDate').textContent = formatDate(milestone.due_date);
+            document.getElementById('milestoneOwnerDisplay').textContent = milestone.owner || 'Unknown';
+
+            // Load goal name and make it clickable
+            loadGoalName(milestone.goal_id);
+
+            // Update progress circle
+            const progress = milestone.progress || 0;
+            const circle = document.getElementById('progressCircle');
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference - (progress / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+            document.getElementById('progressPercent').textContent = `${progress}%`;
+
+            // Update status badge
+            const statusBadge = document.getElementById('milestoneStatusBadge');
+            statusBadge.textContent = milestone.status.replace('_', ' ');
+            statusBadge.className = 'status-badge-large ' + milestone.status;
+
+            // Update stats
+            document.getElementById('milestoneProgressStat').textContent = `${progress}%`;
+            document.getElementById('milestoneStatusStat').textContent = milestone.status.replace('_', ' ');
+
+            // Update description
+            const descElement = document.getElementById('milestoneDescription');
+            descElement.textContent = milestone.description || 'No description provided.';
+        }
+
+        async function loadGoalName(goalId) {
+            if (!goalId) {
+                document.getElementById('milestoneGoal').textContent = 'No goal';
+                document.getElementById('milestoneGoalLink').style.display = 'none';
+                return;
+            }
+
+            try {
+                const goals = await supabase.select('goals', { id: goalId });
+                if (goals && goals.length > 0) {
+                    document.getElementById('milestoneGoal').textContent = goals[0].title;
+                    document.getElementById('milestoneGoalLink').href = `goal-detail.html?id=${goalId}`;
+                }
+            } catch (error) {
+                console.error('Error loading goal:', error);
+            }
+        }
+
+        async function loadTasks() {
+            try {
+                const tasks = await supabase.select('tasks', { milestone_id: milestoneId });
+
+                // Update task count
+                document.getElementById('milestoneTaskCount').textContent = tasks?.length || 0;
+
+                if (tasks && tasks.length > 0) {
+                    renderTasks(tasks);
+                }
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+            }
+        }
+
+        function renderTasks(tasks) {
+            const container = document.getElementById('tasksContainer');
+
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-message">
+                        <span class="empty-icon">✓</span>
+                        <p>No tasks yet. Create tasks for this milestone.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = tasks.map(task => {
+                // Find assignee info
+                const assignee = teamMembers.find(m => m.id === task.assignee_id);
+                const assigneeName = assignee ? (assignee.display_name || assignee.full_name || assignee.email.split('@')[0]) : 'Unassigned';
+                const assigneeInitials = assigneeName.substring(0, 2).toUpperCase();
+
+                // Status icon and color
+                const statusIcons = {
+                    'TODO': '○',
+                    'IN_PROGRESS': '◐',
+                    'COMPLETED': '●',
+                    'BLOCKED': '⊗'
+                };
+                const statusIcon = statusIcons[task.status] || '○';
+
+                // Priority badge style
+                const priorityClass = task.priority.toLowerCase();
+
+                return `
+                    <div class="task-card" style="cursor: default;">
+                        <div class="task-icon ${task.status.toLowerCase()}">
+                            ${statusIcon}
+                        </div>
+                        <div class="task-info">
+                            <h4 class="task-title ${task.status === 'COMPLETED' ? 'completed' : ''}">${escapeHtml(task.title)}</h4>
+                            <p class="task-description">${escapeHtml(task.description || 'No description')}</p>
+                            <div class="task-meta">
+                                <span class="meta-item">
+                                    <span class="assignee-avatar">${assigneeInitials}</span>
+                                    ${escapeHtml(assigneeName)}
+                                </span>
+                                ${task.due_date ? `<span class="meta-item">📅 ${formatDate(task.due_date)}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="task-badges">
+                            <span class="priority-badge ${priorityClass}">${task.priority}</span>
+                            <span class="status-badge ${task.status.toLowerCase().replace('_', '-')}">${task.status.replace('_', ' ')}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Edit Milestone
+        window.editMilestone = function () {
+            if (!currentMilestone) return;
+
+            document.getElementById('editMilestoneTitle').value = currentMilestone.title;
+            document.getElementById('editMilestoneDescription').value = currentMilestone.description || '';
+            document.getElementById('editMilestoneGoal').value = currentMilestone.goal_id || '';
+            populateOwnerDropdown(currentMilestone.owner);
+            document.getElementById('editMilestoneDueDate').value = currentMilestone.due_date;
+            document.getElementById('editMilestoneStatus').value = currentMilestone.status;
+            document.getElementById('editMilestoneProgress').value = currentMilestone.progress || 0;
+
+            document.getElementById('editMilestoneModal').style.display = 'flex';
+        };
+
+        window.closeEditModal = function () {
+            document.getElementById('editMilestoneModal').style.display = 'none';
+        };
+
+        window.handleEditSubmit = async function (event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('editSubmitBtn');
+            const submitBtnText = document.getElementById('editSubmitBtnText');
+            const submitBtnLoader = document.getElementById('editSubmitBtnLoader');
+
+            submitBtn.disabled = true;
+            submitBtnText.style.display = 'none';
+            submitBtnLoader.style.display = 'inline-block';
+
+            try {
+                const formData = new FormData(event.target);
+                const milestoneData = {
+                    title: formData.get('title'),
+                    description: formData.get('description') || '',
+                    owner: formData.get('owner'),
+                    due_date: formData.get('due_date'),
+                    status: formData.get('status'),
+                    progress: parseInt(formData.get('progress')) || 0,
+                    updated_at: new Date().toISOString()
+                };
+
+                await supabase.update('milestones', milestoneId, milestoneData);
+
+                showToast('Milestone updated successfully', 'success');
+                closeEditModal();
+                await loadMilestoneDetails();
+            } catch (error) {
+                console.error('Error updating milestone:', error);
+                showToast('Failed to update milestone', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.style.display = 'inline';
+                submitBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Delete Milestone
+        window.confirmDeleteMilestone = function () {
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        };
+
+        window.closeDeleteModal = function () {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+        };
+
+        window.deleteMilestone = async function () {
+            const deleteBtn = document.querySelector('#deleteConfirmModal .btn-danger');
+            const deleteBtnText = document.getElementById('deleteBtnText');
+            const deleteBtnLoader = document.getElementById('deleteBtnLoader');
+
+            deleteBtn.disabled = true;
+            deleteBtnText.style.display = 'none';
+            deleteBtnLoader.style.display = 'inline-block';
+
+            try {
+                const goalId = currentMilestone.goal_id;
+
+                await supabase.delete('milestones', milestoneId);
+
+                // Update the goal's milestone count after deletion
+                if (goalId) {
+                    const milestones = await supabase.select('milestones', { goal_id: goalId });
+                    const actualCount = milestones?.length || 0;
+                    await supabase.update('goals', goalId, { milestone_count: actualCount });
+                    console.log(`✅ Updated goal milestone count to ${actualCount} after deletion`);
+                }
+
+                showToast('Milestone deleted successfully', 'success');
+                setTimeout(() => {
+                    window.location.href = '../milestones/milestones.html';
+                }, 1000);
+            } catch (error) {
+                console.error('Error deleting milestone:', error);
+                showToast('Failed to delete milestone', 'error');
+                deleteBtn.disabled = false;
+                deleteBtnText.style.display = 'inline';
+                deleteBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Add Task
+        window.addTask = function () {
+            if (!currentMilestone) {
+                showToast('Milestone not loaded', 'error');
+                return;
+            }
+
+            // Reset form
+            document.getElementById('addTaskForm').reset();
+
+            // Set locked milestone
+            const milestoneSelect = document.getElementById('taskMilestone');
+            milestoneSelect.innerHTML = `<option value="${milestoneId}" selected>${escapeHtml(currentMilestone.title)}</option>`;
+
+            // Populate owners dropdown
+            populateTaskOwnersDropdown();
+
+            // Set default due date (tomorrow)
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('taskDueDate').value = tomorrow.toISOString().split('T')[0];
+
+            document.getElementById('addTaskModal').style.display = 'flex';
+        };
+
+        function populateTaskOwnersDropdown(selectedOwnerId = null) {
+            const ownerSelect = document.getElementById('taskOwner');
+            ownerSelect.innerHTML = '<option value="">Select owner...</option>';
+
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                const displayName = member.display_name || member.full_name || member.email.split('@')[0];
+                option.value = member.id;
+                option.textContent = displayName;
+
+                // Pre-select current user or specified owner
+                if (selectedOwnerId ? (member.id === selectedOwnerId) : (member.email === currentUser.email)) {
+                    option.selected = true;
+                }
+
+                ownerSelect.appendChild(option);
+            });
+        }
+
+        window.closeAddTaskModal = function () {
+            document.getElementById('addTaskModal').style.display = 'none';
+        };
+
+        window.handleAddTaskSubmit = async function (event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('addTaskSubmitBtn');
+            const submitBtnText = document.getElementById('addTaskSubmitBtnText');
+            const submitBtnLoader = document.getElementById('addTaskSubmitBtnLoader');
+
+            submitBtn.disabled = true;
+            submitBtnText.style.display = 'none';
+            submitBtnLoader.style.display = 'inline-block';
+
+            try {
+                const formData = new FormData(event.target);
+                const taskData = {
+                    title: formData.get('title'),
+                    description: formData.get('description') || '',
+                    milestone_id: milestoneId,
+                    goal_id: currentMilestone.goal_id,
+                    user_id: currentUser.id,
+                    assignee_id: formData.get('assignee_id'),
+                    status: formData.get('status'),
+                    priority: formData.get('priority'),
+                    due_date: formData.get('due_date'),
+                    metadata: { progress: parseInt(formData.get('progress')) || 0 }
+                };
+
+                await supabase.insert('tasks', taskData);
+
+                showToast('Task created successfully', 'success');
+                closeAddTaskModal();
+                await loadTasks();
+            } catch (error) {
+                console.error('Error creating task:', error);
+                showToast('Failed to create task', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.style.display = 'inline';
+                submitBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Utility Functions
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Logout function
+        window.logout = function () {
+            supabase.signOut();
+            window.location.href = '../auth/login.html';
+        };
+    </script>
+
+</body>
+
+</html>
