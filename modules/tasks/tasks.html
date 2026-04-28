@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tasks - FlowBit</title>
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/tasks.css">
+    <link rel="stylesheet" href="../../assets/css/goals.css">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="logo">
+            <div class="logo-icon"></div>
+            <span>FlowBit</span>
+        </div>
+
+        <nav class="nav-menu">
+            <a href="../dashboard/dashboard.html" class="nav-item">
+                <span class="icon">◦</span>
+                <span>Dashboard</span>
+            </a>
+            <a href="../goals/goals.html" class="nav-item">
+                <span class="icon">⚑</span>
+                <span>Goals</span>
+            </a>
+            <a href="../milestones/milestones.html" class="nav-item">
+                <span class="icon">◉</span>
+                <span>Milestones</span>
+            </a>
+            <a href="../tasks/tasks.html" class="nav-item active">
+                <span class="icon">☰</span>
+                <span>Tasks</span>
+            </a>
+            <a href="../risk-engine/risk-engine.html" class="nav-item">
+                <span class="icon">⚠</span>
+                <span>Risk Engine</span>
+            </a>
+            <a href="../insights/insights.html" class="nav-item">
+                <span class="icon">◐</span>
+                <span>Insights</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-profile">
+                <div class="user-avatar" id="userAvatarSmall">JD</div>
+                <div class="user-info">
+                    <div class="user-name-small" id="userNameSmall">John Doe</div>
+                    <div class="user-role">Project Manager</div>
+                </div>
+            </div>
+            <button class="btn-logout" onclick="logout()">
+                <span class="icon">→</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-actions">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" placeholder="Search..." id="searchInput">
+                </div>
+                <div class="notification-bell">
+                    🔔
+                    <span class="badge">3</span>
+                </div>
+                <button class="theme-toggle">⚙️</button>
+                <div class="user-avatar" id="userAvatar">JD</div>
+            </div>
+        </header>
+
+        <!-- Page Content -->
+        <div class="page-content">
+            <!-- Breadcrumb -->
+            <div class="breadcrumb">
+                <a href="../dashboard/dashboard.html">Home</a>
+                <span class="separator">›</span>
+                <span class="current">Tasks</span>
+            </div>
+
+            <!-- Page Header with Button and Filters -->
+            <div class="page-header-with-filters">
+                <button class="btn-new-task" onclick="openAddTaskModal()">
+                    <span class="plus-icon">+</span>
+                    New Task
+                </button>
+                <div class="filters-right">
+                    <select class="filter-dropdown" id="scopeFilter" onchange="filterTasks()">
+                        <option value="all">All Tasks</option>
+                        <option value="my">My Tasks</option>
+                    </select>
+                    <select class="filter-dropdown" id="statusFilter" onchange="filterTasks()">
+                        <option value="all">All Status</option>
+                        <option value="TODO">To Do</option>
+                        <option value="IN_PROGRESS">In Progress</option>
+                        <option value="COMPLETED">Completed</option>
+                        <option value="BLOCKED">Blocked</option>
+                    </select>
+                    <select class="filter-dropdown" id="complexityFilter" onchange="filterTasks()">
+                        <option value="all">All Complexity</option>
+                        <option value="LOW">Low</option>
+                        <option value="MEDIUM">Medium</option>
+                        <option value="HIGH">High</option>
+                        <option value="CRITICAL">Critical</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div id="loadingState" class="loading-state" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading tasks...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <div class="empty-icon">📋</div>
+                <h2>No tasks yet</h2>
+                <p>Create your first task to get started.</p>
+                <button class="btn-primary" onclick="openAddTaskModal()">Create Task</button>
+            </div>
+
+            <!-- Tasks Table -->
+            <div class="table-container" id="tasksTableContainer" style="display: none;">
+                <table class="tasks-table">
+                    <thead>
+                        <tr>
+                            <th class="checkbox-col"><input type="checkbox" id="selectAll"></th>
+                            <th class="task-name-col">TASK NAME</th>
+                            <th class="assigned-col">ASSIGNED TO</th>
+                            <th class="goal-col">GOAL / MILESTONE</th>
+                            <th class="date-col">DUE DATE</th>
+                            <th class="complexity-col">COMPLEXITY</th>
+                            <th class="status-col">STATUS</th>
+                            <th class="actions-col">ACTIONS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasksTableBody">
+                        <!-- Tasks will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Task Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2 id="modalTitle">New Task</h2>
+                <button class="modal-close" onclick="closeTaskModal()">&times;</button>
+            </div>
+            <form id="taskForm" onsubmit="handleTaskSubmit(event)">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="taskTitle">Title <span class="required">*</span></label>
+                        <input type="text" id="taskTitle" name="title" required maxlength="200">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskDescription">Description</label>
+                        <textarea id="taskDescription" name="description" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskMilestone">Milestone <span class="required">*</span></label>
+                        <select id="taskMilestone" name="milestone_id" required>
+                            <option value="">Select a milestone...</option>
+                            <!-- Milestones will be loaded dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="taskOwner">Assigned To <span class="required">*</span></label>
+                        <select id="taskOwner" name="assignee_id" required>
+                            <option value="">Select owner...</option>
+                            <!-- Owners will be loaded dynamically -->
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskDueDate">Due Date <span class="required">*</span></label>
+                            <input type="date" id="taskDueDate" name="due_date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskStatus">Status</label>
+                            <select id="taskStatus" name="status">
+                                <option value="TODO">To Do</option>
+                                <option value="IN_PROGRESS">In Progress</option>
+                                <option value="COMPLETED">Completed</option>
+                                <option value="BLOCKED">Blocked</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskPriority">Complexity</label>
+                            <select id="taskPriority" name="priority">
+                                <option value="LOW">Low</option>
+                                <option value="MEDIUM" selected>Medium</option>
+                                <option value="HIGH">High</option>
+                                <option value="CRITICAL">Critical</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskProgress">Progress (%)</label>
+                            <input type="number" id="taskProgress" name="progress" min="0" max="100" value="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn-secondary" onclick="closeTaskModal()">Cancel</button>
+                    <button type="submit" class="btn-primary" id="submitBtn">
+                        <span id="submitBtnText">Create Task</span>
+                        <span id="submitBtnLoader" class="btn-loader" style="display: none;"></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Delete Task</h2>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this task? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button type="button" class="btn-danger" onclick="confirmDeleteTask()">
+                    <span id="deleteBtnText">Delete</span>
+                    <span id="deleteBtnLoader" class="btn-loader" style="display: none;"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import supabase from '../../assets/js/config/supabase-client.js';
+
+        let currentUser = null;
+        let allTasks = [];
+        let allMilestones = [];
+        let allGoals = [];
+        let teamMembers = [];
+        let currentTaskId = null;
+        let taskToDelete = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                currentUser = await supabase.getCurrentUser();
+                if (!currentUser) {
+                    window.location.href = '../auth/login.html';
+                    return;
+                }
+
+                // Update UI with user info
+                document.getElementById('userNameSmall').textContent = currentUser.email;
+                document.getElementById('userAvatar').textContent = currentUser.email.charAt(0).toUpperCase();
+                document.getElementById('userAvatarSmall').textContent = currentUser.email.charAt(0).toUpperCase();
+
+                // Load data in sequence to avoid race conditions
+                await loadTeamMembers();
+                await loadGoals();
+                await loadMilestones();
+                await loadTasks();
+
+                console.log('✅ Tasks page loaded successfully!');
+            } catch (error) {
+                console.error('Error initializing page:', error);
+                showToast('Failed to load page', 'error');
+            }
+        });
+
+        // Load Team Members
+        async function loadTeamMembers() {
+            try {
+                const result = await supabase.getAllTeamMembers();
+                teamMembers = Array.isArray(result) ? result : [];
+                
+                // Always add current user if not in list
+                const currentUserExists = teamMembers.some(m => m.email === currentUser.email);
+                if (!currentUserExists) {
+                    teamMembers.push({
+                        id: currentUser.id,
+                        email: currentUser.email,
+                        display_name: currentUser.email.split('@')[0]
+                    });
+                }
+                
+                console.log('✅ Loaded team members:', teamMembers.length);
+            } catch (error) {
+                console.error('Error loading team members:', error);
+                teamMembers = [{
+                    id: currentUser.id,
+                    email: currentUser.email,
+                    display_name: currentUser.email.split('@')[0]
+                }];
+            }
+        }
+
+        // Load Goals
+        async function loadGoals() {
+            try {
+                const goals = await supabase.select('goals');
+                allGoals = goals || [];
+                console.log('✅ Loaded goals:', allGoals.length);
+            } catch (error) {
+                console.error('Error loading goals:', error);
+                allGoals = [];
+            }
+        }
+
+        // Load Milestones
+        async function loadMilestones() {
+            try {
+                const milestones = await supabase.select('milestones');
+                allMilestones = milestones || [];
+                console.log('✅ Loaded milestones:', allMilestones.length);
+            } catch (error) {
+                console.error('Error loading milestones:', error);
+                allMilestones = [];
+            }
+        }
+
+        // Load Tasks
+        async function loadTasks() {
+            try {
+                showLoading(true);
+                
+                // Ensure dependencies are loaded
+                if (allMilestones.length === 0) {
+                    console.warn('⚠️ Milestones not loaded yet, loading now...');
+                    await loadMilestones();
+                }
+                if (allGoals.length === 0) {
+                    console.warn('⚠️ Goals not loaded yet, loading now...');
+                    await loadGoals();
+                }
+                
+                const tasks = await supabase.select('tasks', null, { order: 'due_date.asc' });
+                allTasks = tasks || [];
+                
+                console.log('✅ Loaded tasks from DB:', allTasks.length);
+                console.log('📊 Dependencies - Goals:', allGoals.length, 'Milestones:', allMilestones.length);
+                
+                if (allTasks.length === 0) {
+                    showEmptyState();
+                } else {
+                    filterTasks();
+                }
+            } catch (error) {
+                console.error('❌ Error loading tasks:', error);
+                showToast('Failed to load tasks', 'error');
+                showEmptyState();
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Filter Tasks
+        window.filterTasks = function() {
+            const scopeFilter = document.getElementById('scopeFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const complexityFilter = document.getElementById('complexityFilter').value;
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+
+            console.log('🔍 Filtering tasks:', { scopeFilter, statusFilter, complexityFilter, searchInput });
+
+            let filtered = [...allTasks];
+
+            // Apply scope filter
+            if (scopeFilter === 'my') {
+                filtered = filtered.filter(t => t.assignee_id === currentUser.id);
+            }
+
+            // Apply status filter
+            if (statusFilter !== 'all') {
+                filtered = filtered.filter(t => t.status === statusFilter);
+            }
+
+            // Apply complexity filter
+            if (complexityFilter !== 'all') {
+                filtered = filtered.filter(t => t.priority === complexityFilter);
+            }
+
+            // Apply search filter
+            if (searchInput) {
+                filtered = filtered.filter(t => 
+                    t.title.toLowerCase().includes(searchInput) ||
+                    (t.description && t.description.toLowerCase().includes(searchInput))
+                );
+            }
+
+            console.log('✅ Filtered tasks:', filtered.length, 'of', allTasks.length);
+
+            if (filtered.length === 0) {
+                showEmptyState();
+            } else {
+                renderTasks(filtered);
+            }
+        };
+
+        // Render Tasks
+        function renderTasks(tasks) {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('tasksTableContainer').style.display = 'block';
+
+            const tbody = document.getElementById('tasksTableBody');
+            tbody.innerHTML = tasks.map(task => {
+                const milestone = allMilestones.find(m => m.id === task.milestone_id);
+                const goal = milestone ? allGoals.find(g => g.id === milestone.goal_id) : null;
+                const assignee = teamMembers.find(m => m.id === task.assignee_id);
+                
+                const statusClass = task.status.toLowerCase().replace('_', '-');
+                const priorityClass = task.priority.toLowerCase();
+                const assigneeName = assignee ? (assignee.display_name || assignee.full_name || assignee.email.split('@')[0]) : 'Unknown';
+                const assigneeInitials = assigneeName.substring(0, 2).toUpperCase();
+                
+                return `
+                    <tr data-task-id="${task.id}">
+                        <td><input type="checkbox"></td>
+                        <td class="task-name">${escapeHtml(task.title)}</td>
+                        <td>
+                            <div class="assigned-user">
+                                <div class="user-avatar-small">${assigneeInitials}</div>
+                                <span>${escapeHtml(assigneeName)}</span>
+                            </div>
+                        </td>
+                        <td>${goal ? escapeHtml(goal.title) : 'No Goal'} / ${milestone ? escapeHtml(milestone.title) : 'No Milestone'}</td>
+                        <td>${formatDate(task.due_date)}</td>
+                        <td><span class="badge-complexity ${priorityClass}">${task.priority}</span></td>
+                        <td><span class="badge-status ${statusClass}">${task.status.replace('_', ' ')}</span></td>
+                        <td>
+                            <div class="actions-cell">
+                                <button class="btn-action" onclick="editTask('${task.id}')" title="Edit">✎</button>
+                                <button class="btn-action" onclick="deleteTask('${task.id}')" title="Delete">🗑</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Open Add Task Modal
+        window.openAddTaskModal = function(milestoneId = null, filteredGoalId = null) {
+            currentTaskId = null;
+            document.getElementById('modalTitle').textContent = 'New Task';
+            document.getElementById('submitBtnText').textContent = 'Create Task';
+            document.getElementById('taskForm').reset();
+            
+            // Populate milestones dropdown
+            populateMilestonesDropdown(milestoneId, filteredGoalId);
+            populateOwnersDropdown();
+            
+            // Set default due date (tomorrow)
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            document.getElementById('taskDueDate').value = tomorrow.toISOString().split('T')[0];
+            
+            document.getElementById('taskModal').style.display = 'flex';
+        };
+
+        // Populate Milestones Dropdown
+        function populateMilestonesDropdown(selectedMilestoneId = null, filteredGoalId = null) {
+            const milestoneSelect = document.getElementById('taskMilestone');
+            milestoneSelect.innerHTML = '<option value="">Select a milestone...</option>';
+            
+            let milestones = allMilestones;
+            
+            // Filter by goal if specified
+            if (filteredGoalId) {
+                milestones = milestones.filter(m => m.goal_id === filteredGoalId);
+            }
+            
+            milestones.forEach(milestone => {
+                const option = document.createElement('option');
+                option.value = milestone.id;
+                option.textContent = milestone.title;
+                if (selectedMilestoneId && milestone.id === selectedMilestoneId) {
+                    option.selected = true;
+                    if (filteredGoalId) {
+                        // If locked to single milestone, disable dropdown
+                        milestoneSelect.disabled = true;
+                    }
+                }
+                milestoneSelect.appendChild(option);
+            });
+        }
+
+        // Populate Owners Dropdown
+        function populateOwnersDropdown(selectedOwnerId = null) {
+            const ownerSelect = document.getElementById('taskOwner');
+            ownerSelect.innerHTML = '<option value="">Select owner...</option>';
+            
+            teamMembers.forEach(member => {
+                const option = document.createElement('option');
+                const displayName = member.display_name || member.full_name || member.email.split('@')[0];
+                option.value = member.id;
+                option.textContent = displayName;
+                
+                // Pre-select current user or specified owner
+                if (selectedOwnerId ? (member.id === selectedOwnerId) : (member.email === currentUser.email)) {
+                    option.selected = true;
+                }
+                
+                ownerSelect.appendChild(option);
+            });
+        }
+
+        // Handle Task Submit
+        window.handleTaskSubmit = async function(event) {
+            event.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const submitBtnText = document.getElementById('submitBtnText');
+            const submitBtnLoader = document.getElementById('submitBtnLoader');
+            
+            submitBtn.disabled = true;
+            submitBtnText.style.display = 'none';
+            submitBtnLoader.style.display = 'inline-block';
+
+            try {
+                const formData = new FormData(event.target);
+                const milestone = allMilestones.find(m => m.id === formData.get('milestone_id'));
+                
+                const taskData = {
+                    title: formData.get('title'),
+                    description: formData.get('description') || '',
+                    milestone_id: formData.get('milestone_id'),
+                    goal_id: milestone ? milestone.goal_id : null,
+                    user_id: currentUser.id,
+                    assignee_id: formData.get('assignee_id'),
+                    due_date: formData.get('due_date'),
+                    status: formData.get('status'),
+                    priority: formData.get('priority'),
+                    metadata: { progress: parseInt(formData.get('progress')) || 0 }
+                };
+
+                if (currentTaskId) {
+                    // Update existing task
+                    await supabase.update('tasks', currentTaskId, taskData);
+                    showToast('Task updated successfully', 'success');
+                } else {
+                    // Create new task
+                    await supabase.insert('tasks', taskData);
+                    showToast('Task created successfully', 'success');
+                }
+
+                closeTaskModal();
+                await loadTasks();
+            } catch (error) {
+                console.error('Error saving task:', error);
+                showToast('Failed to save task', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.style.display = 'inline';
+                submitBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Edit Task
+        window.editTask = function(taskId) {
+            const task = allTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            currentTaskId = taskId;
+            document.getElementById('modalTitle').textContent = 'Edit Task';
+            document.getElementById('submitBtnText').textContent = 'Update Task';
+
+            document.getElementById('taskTitle').value = task.title;
+            document.getElementById('taskDescription').value = task.description || '';
+            document.getElementById('taskDueDate').value = task.due_date;
+            document.getElementById('taskStatus').value = task.status;
+            document.getElementById('taskPriority').value = task.priority;
+            document.getElementById('taskProgress').value = task.metadata?.progress || 0;
+
+            populateMilestonesDropdown(task.milestone_id);
+            populateOwnersDropdown(task.assignee_id);
+
+            document.getElementById('taskModal').style.display = 'flex';
+        };
+
+        // Delete Task
+        window.deleteTask = function(taskId) {
+            taskToDelete = taskId;
+            document.getElementById('deleteConfirmModal').style.display = 'flex';
+        };
+
+        // Confirm Delete Task
+        window.confirmDeleteTask = async function() {
+            const deleteBtn = document.querySelector('#deleteConfirmModal .btn-danger');
+            const deleteBtnText = document.getElementById('deleteBtnText');
+            const deleteBtnLoader = document.getElementById('deleteBtnLoader');
+            
+            deleteBtn.disabled = true;
+            deleteBtnText.style.display = 'none';
+            deleteBtnLoader.style.display = 'inline-block';
+
+            try {
+                await supabase.delete('tasks', taskToDelete);
+                showToast('Task deleted successfully', 'success');
+                closeDeleteModal();
+                await loadTasks();
+            } catch (error) {
+                console.error('Error deleting task:', error);
+                showToast('Failed to delete task', 'error');
+                deleteBtn.disabled = false;
+                deleteBtnText.style.display = 'inline';
+                deleteBtnLoader.style.display = 'none';
+            }
+        };
+
+        // Close Task Modal
+        window.closeTaskModal = function() {
+            document.getElementById('taskModal').style.display = 'none';
+            document.getElementById('taskMilestone').disabled = false;
+            currentTaskId = null;
+        };
+
+        // Close Delete Modal
+        window.closeDeleteModal = function() {
+            document.getElementById('deleteConfirmModal').style.display = 'none';
+            taskToDelete = null;
+        };
+
+        // Utility Functions
+        function showLoading(show) {
+            document.getElementById('loadingState').style.display = show ? 'flex' : 'none';
+            if (!show) {
+                // Don't hide other elements here, let render functions control visibility
+            }
+        }
+
+        function showEmptyState() {
+            document.getElementById('loadingState').style.display = 'none';
+            document.getElementById('tasksTableContainer').style.display = 'none';
+            document.getElementById('emptyState').style.display = 'flex';
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => toast.classList.add('show'), 100);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'No date';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Logout
+        window.logout = async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                try {
+                    await supabase.signOut();
+                    window.location.href = '../auth/login.html';
+                } catch (error) {
+                    console.error('Logout error:', error);
+                    showToast('Logout failed. Please try again.', 'error');
+                }
+            }
+        };
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            filterTasks();
+        });
+    </script>
+</body>
+</html>
