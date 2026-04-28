@@ -1,0 +1,136 @@
+// This is your Prisma schema file
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Model
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  password      String
+  name          String
+  role          Role     @default(MEMBER)
+  avatar        String?
+  department    String?
+  status        UserStatus @default(ACTIVE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  ownedGoals    Goal[]   @relation("GoalOwner")
+  assignedTasks Task[]   @relation("TaskAssignee")
+
+  @@map("users")
+}
+
+// Goal Model
+model Goal {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  status      GoalStatus  @default(NOT_STARTED)
+  priority    Priority    @default(MEDIUM)
+  ownerId     String
+  startDate   DateTime
+  targetDate  DateTime
+  category    String?
+  progress    Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  owner       User        @relation("GoalOwner", fields: [ownerId], references: [id])
+  milestones  Milestone[]
+  tasks       Task[]
+
+  @@map("goals")
+}
+
+// Milestone Model
+model Milestone {
+  id          String          @id @default(uuid())
+  goalId      String
+  title       String
+  description String?
+  status      MilestoneStatus @default(NOT_STARTED)
+  dueDate     DateTime
+  progress    Int             @default(0)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relations
+  goal        Goal            @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  tasks       Task[]
+
+  @@map("milestones")
+}
+
+// Task Model
+model Task {
+  id          String      @id @default(uuid())
+  goalId      String
+  milestoneId String
+  title       String
+  description String?
+  status      TaskStatus  @default(PENDING)
+  priority    Priority    @default(MEDIUM)
+  assignedTo  String
+  dueDate     DateTime
+  tags        String[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  goal        Goal        @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  milestone   Milestone   @relation(fields: [milestoneId], references: [id], onDelete: Cascade)
+  assignee    User        @relation("TaskAssignee", fields: [assignedTo], references: [id])
+
+  @@map("tasks")
+}
+
+// Enums
+enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+  VIEWER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum GoalStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum MilestoneStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  ON_HOLD
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  BLOCKED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  URGENT
+}
