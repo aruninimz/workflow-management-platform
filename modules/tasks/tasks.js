@@ -1,8 +1,3 @@
-/* ============================================
-   TASKS MODULE - JavaScript Logic
-   Developer: Dev 3
-   ============================================ */
-
 class TaskManager {
     constructor() {
         this.tableName = 'tasks';
