@@ -1,0 +1,802 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk Engine - FlowBit</title>
+    <link rel="stylesheet" href=".H/risk-engine.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        /* Critical header styles */
+        .top-header {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            z-index: 9999 !important;
+            background: white !important;
+            min-height: 70px !important;
+        }
+        body.no-sidebar-layout {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .risk-factor-item {
+            padding: 16px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            background: white;
+        }
+        .risk-factor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .risk-factor-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .risk-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .risk-badge.critical { background: #fef2f2; color: #dc2626; }
+        .risk-badge.high { background: #fff7ed; color: #ea580c; }
+        .risk-badge.medium { background: #fffbeb; color: #d97706; }
+        .risk-badge.low { background: #f0fdf4; color: #16a34a; }
+        .risk-factor-description {
+            font-size: 14px;
+            color: #64748b;
+            margin-bottom: 8px;
+        }
+        .risk-factor-meta {
+            font-size: 12px;
+            color: #94a3b8;
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        /* Stat Cards */
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+        
+        .stat-card .stat-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+        }
+        
+        .stat-card.high-risk .stat-icon {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        
+        .stat-card.medium-risk .stat-icon {
+            background: #fed7aa;
+            color: #f97316;
+        }
+        
+        .stat-card.low-risk .stat-icon {
+            background: #d1fae5;
+            color: #10b981;
+        }
+        
+        .stat-card.risk-score .stat-icon {
+            background: #dbeafe;
+            color: #3b82f6;
+        }
+        
+        .stat-info {
+            flex: 1;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        /* Main Container */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 32px;
+            padding-top: 100px;
+        }
+        
+        /* Section Card */
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        
+        .section-header {
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .section-header h2 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #0f172a;
+            margin: 0;
+        }
+        
+        /* Two Column Grid */
+        .two-column-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 24px;
+        }
+        
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            padding: 16px;
+        }
+    </style>
+</head>
+<body class="no-sidebar-layout">
+    <!-- Top Header Bar -->
+    <header class="top-header" style="display: flex !important; visibility: visible !important; opacity: 1 !important; position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; z-index: 9999 !important; background: white !important; width: 100% !important; min-height: 70px !important; padding: 16px 32px; box-sizing: border-box; border-bottom: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05); justify-content: space-between; align-items: center;">
+        <div class="header-left" style="display: flex; align-items: center; gap: 24px; flex: 0 0 auto; min-width: 300px;">
+            <h1 class="page-title" style="font-size: 24px; font-weight: 700; color: #0f172a; margin: 0; white-space: nowrap;">Risk Engine</h1>
+            <div class="breadcrumb" style="display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap;">
+                <a href="../dashboard/dashboard.html" style="color: #64748b; text-decoration: none;">Home</a>
+                <span class="separator" style="color: #cbd5e1; font-size: 16px;">›</span>
+                <span class="current" style="color: #0f172a; font-weight: 500;">Risk Engine</span>
+            </div>
+        </div>
+        
+        <div class="header-center" style="flex: 1 1 auto; display: flex; justify-content: center; max-width: 500px; margin: 0 24px;">
+            <div class="search-bar" style="position: relative; width: 100%; max-width: 400px;">
+                <span class="search-icon" style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #64748b;">🔍</span>
+                <input type="text" placeholder="Search..." style="width: 100%; padding: 10px 16px 10px 42px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: #f8fafc;">
+            </div>
+        </div>
+        
+        <div class="header-right" style="display: flex; align-items: center; gap: 16px; flex: 0 0 auto; justify-content: flex-end; min-width: 180px;">
+            <button class="icon-btn notification-btn" style="position: relative; width: 40px; height: 40px; border-radius: 8px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                <span class="icon">🔔</span>
+                <span class="notification-badge" style="position: absolute; top: 6px; right: 6px; background: #ef4444; color: white; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 10px; min-width: 18px; height: 18px; display: flex; align-items: center; justify-content: center;">1</span>
+            </button>
+            <button class="icon-btn settings-btn" style="width: 40px; height: 40px; border-radius: 8px; background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+                <span class="icon">⚙️</span>
+            </button>
+            <div class="user-avatar" id="userAvatar" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 14px; cursor: pointer;">JD</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card high-risk">
+                <div class="stat-icon">⚠</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="highRiskCount">0</div>
+                    <div class="stat-label">High Risk</div>
+                </div>
+            </div>
+            
+            <div class="stat-card medium-risk">
+                <div class="stat-icon">⚠</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="mediumRiskCount">0</div>
+                    <div class="stat-label">Medium Risk</div>
+                </div>
+            </div>
+            
+            <div class="stat-card low-risk">
+                <div class="stat-icon">✓</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="lowRiskCount">0</div>
+                    <div class="stat-label">Low Risk</div>
+                </div>
+            </div>
+            
+            <div class="stat-card risk-score">
+                <div class="stat-icon">◐</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="riskScoreValue">100</div>
+                    <div class="stat-label">Risk Score</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Factors Analysis -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Risk Factors Analysis</h2>
+                <div style="font-size: 14px; color: #64748b;">Automatically detected from your data</div>
+            </div>
+            
+            <div id="riskFactorsList">
+                <div style="text-align: center; padding: 40px; color: #64748b;">
+                    <p style="font-size: 16px; margin-bottom: 8px;">Loading risk analysis...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Risk Trends Chart -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Risk Trends Over Time</h2>
+                <div style="font-size: 14px; color: #64748b;">Last 6 weeks</div>
+            </div>
+            <div class="chart-container" style="height: 350px;">
+                <canvas id="riskTrendChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Risk Distribution -->
+        <div class="two-column-grid">
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Risk by Category</h2>
+                </div>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="riskCategoryChart"></canvas>
+                </div>
+            </div>
+
+            <div class="section-card">
+                <div class="section-header">
+                    <h2>Risk by Impact</h2>
+                </div>
+                <div class="chart-container" style="height: 300px;">
+                    <canvas id="riskImpactChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module">
+        import supabase from '../../assets/js/config/supabase-client.js';
+        import { AutomaticRiskEngine } from '../../assets/js/services/risk-engine-auto.js';
+
+        let trendChart = null;
+        let categoryChart = null;
+        let impactChart = null;
+
+        // Logout function
+        window.logout = async function() {
+            if (confirm('Are you sure you want to logout?')) {
+                const { error } = await supabase.signOut();
+                if (error) {
+                    alert('Error logging out: ' + error.message);
+                } else {
+                    window.location.replace('login.html');
+                }
+            }
+        };
+
+        // Check authentication and initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Risk Engine V2 (Automatic) Starting...');
+            
+            // Ensure header is visible
+            document.querySelector('.top-header').style.display = 'flex';
+            
+            const user = await supabase.getCurrentUser();
+            if (!user) {
+                window.location.replace('login.html');
+                return;
+            }
+
+            // Update user info
+            const initials = user.email.substring(0, 2).toUpperCase();
+            const avatarEl = document.getElementById('userAvatar');
+            if (avatarEl) {
+                avatarEl.textContent = initials;
+            }
+
+            // Initialize automatic risk engine
+            const engine = new AutomaticRiskEngine(supabase);
+            let isLoadingData = false; // Prevent concurrent loads
+            let lastLoadTime = 0;      // Track last load
+            
+            // Function to load all risk data
+            async function loadRiskData() {
+                // Debounce: prevent multiple calls within 1 second
+                const now = Date.now();
+                if (isLoadingData || (now - lastLoadTime < 1000)) {
+                    console.log('⏭️ Skipping load - already loading or loaded recently');
+                    return;
+                }
+                
+                isLoadingData = true;
+                lastLoadTime = now;
+                
+                try {
+                    console.log('🔍 Calculating risks from tasks, milestones, and goals...');
+                    
+                    // Calculate all risks automatically
+                    const result = await engine.calculateAllRisks();
+                
+                if (result.success) {
+                    const { risks, metrics, health } = result.data;
+                    
+                    console.log('✅ Risk calculation complete');
+                    console.log(`📊 Total risks: ${risks.length}`);
+                    console.log(`📈 Metrics:`, metrics);
+                    console.log(`💚 Health Score: ${health.overall_health_score}/100`);
+                    
+                    // Update all UI components
+                    console.log('🔄 Updating stat cards with risks data:', {
+                        total_risks: risks.length,
+                        risks_with_counts: risks.map(r => ({
+                            id: r.id,
+                            level: r.level,
+                            title: r.title,
+                            affected_count: r.affected_count || 1
+                        }))
+                    });
+                    
+                    // Check for duplicate risk IDs
+                    const riskIds = risks.map(r => r.id);
+                    const duplicateIds = riskIds.filter((id, index) => riskIds.indexOf(id) !== index);
+                    if (duplicateIds.length > 0) {
+                        console.error('⚠️ DUPLICATE RISK IDs DETECTED:', duplicateIds);
+                    }
+                    
+                    updateStatCards(metrics, health, risks);
+                    console.log('🔄 Updating risk factors list...');
+                    updateRiskFactors(risks);
+                    
+                    // Get trends and update charts
+                    const trendsResult = await engine.calculateRiskTrends();
+                    if (trendsResult.success) {
+                        updateTrendsChart(trendsResult.data);
+                    }
+                    
+                    updateCategoryChart(risks);
+                    updateImpactChart(risks);
+                    
+                    console.log('✅ Risk Engine UI updated');
+                } else {
+                    throw new Error(result.error || 'Failed to calculate risks');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                
+                // Show error state
+                document.getElementById('riskFactorsList').innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #ef4444;">
+                        <p style="font-size: 16px; margin-bottom: 8px;">⚠️ Error loading risk data</p>
+                        <p style="font-size: 14px;">${error.message}</p>
+                        <button onclick="location.reload()" style="margin-top: 16px; padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            Reload Page
+                        </button>
+                    </div>
+                `;
+            } finally {
+                isLoadingData = false;
+            }
+        }
+        
+        // Load data on initial page load
+        await loadRiskData();
+        
+        // Auto-refresh when page becomes visible (user navigates back)
+        document.addEventListener('visibilitychange', async () => {
+            if (!document.hidden) {
+                console.log('🔄 Page visible - refreshing risk data...');
+                await loadRiskData();
+            }
+        });
+        
+        // Also refresh when window gains focus
+        window.addEventListener('focus', async () => {
+            console.log('🔄 Window focused - refreshing risk data...');
+            await loadRiskData();
+        });
+        
+        });
+
+        // Update stat cards
+        function updateStatCards(metrics, health, risks) {
+            // Count AFFECTED ITEMS, not risk categories
+            // Critical/High items should show total count of tasks/milestones, not just risk groups
+            
+            let criticalCount = 0;
+            let highCount = 0;
+            let mediumCount = 0;
+            let lowCount = 0;
+            
+            risks.forEach(risk => {
+                const affectedCount = risk.affected_count || 1;
+                const level = (risk.level || 'LOW').toUpperCase();
+                
+                switch(level) {
+                    case 'CRITICAL':
+                        criticalCount += affectedCount;
+                        break;
+                    case 'HIGH':
+                        highCount += affectedCount;
+                        break;
+                    case 'MEDIUM':
+                        mediumCount += affectedCount;
+                        break;
+                    case 'LOW':
+                        lowCount += affectedCount;
+                        break;
+                }
+            });
+            
+            const highRisk = criticalCount + highCount;
+            const mediumRisk = mediumCount;
+            const lowRisk = lowCount;
+            
+            console.log('📊 STAT CARD CALCULATION:', {
+                critical_items: criticalCount,
+                high_items: highCount,
+                medium_items: mediumCount,
+                low_items: lowCount,
+                total_high_risk: highRisk,
+                healthScore: health.overall_health_score
+            });
+            
+            // Force fresh DOM queries - no caching
+            const highRiskEl = document.getElementById('highRiskCount');
+            const mediumRiskEl = document.getElementById('mediumRiskCount');
+            const lowRiskEl = document.getElementById('lowRiskCount');
+            const riskScoreEl = document.getElementById('riskScoreValue');
+            
+            console.log('🔍 DOM Elements found:', {
+                highRiskEl: !!highRiskEl,
+                mediumRiskEl: !!mediumRiskEl,
+                lowRiskEl: !!lowRiskEl,
+                riskScoreEl: !!riskScoreEl
+            });
+            
+            if (highRiskEl) {
+                highRiskEl.textContent = highRisk;
+                console.log(`✅ Updated highRiskCount: ${highRisk}`);
+            } else {
+                console.error('❌ highRiskCount element not found!');
+            }
+            
+            if (mediumRiskEl) {
+                mediumRiskEl.textContent = mediumRisk;
+                console.log(`✅ Updated mediumRiskCount: ${mediumRisk}`);
+            } else {
+                console.error('❌ mediumRiskCount element not found!');
+            }
+            
+            if (lowRiskEl) {
+                lowRiskEl.textContent = lowRisk;
+                console.log(`✅ Updated lowRiskCount: ${lowRisk}`);
+            } else {
+                console.error('❌ lowRiskCount element not found!');
+            }
+            
+            if (riskScoreEl) {
+                riskScoreEl.textContent = `${health.overall_health_score}/100`;
+                console.log(`✅ Updated riskScoreValue: ${health.overall_health_score}/100`);
+            } else {
+                console.error('❌ riskScoreValue element not found!');
+            }
+            
+            console.log('✅ Stat cards update complete:', {
+                highRiskText: highRiskEl ? highRiskEl.textContent : 'NOT FOUND',
+                mediumRiskText: mediumRiskEl ? mediumRiskEl.textContent : 'NOT FOUND',
+                lowRiskText: lowRiskEl ? lowRiskEl.textContent : 'NOT FOUND',
+                scoreText: riskScoreEl ? riskScoreEl.textContent : 'NOT FOUND'
+            });
+            
+            // DIAGNOSTIC: Check for duplicate IDs
+            const allHighRisk = document.querySelectorAll('#highRiskCount');
+            const allMediumRisk = document.querySelectorAll('#mediumRiskCount');
+            const allLowRisk = document.querySelectorAll('#lowRiskCount');
+            const allRiskScore = document.querySelectorAll('#riskScoreValue');
+            
+            console.log('🔍 DUPLICATE ID CHECK:', {
+                highRiskCount_duplicates: allHighRisk.length,
+                highRiskCount_values: Array.from(allHighRisk).map(el => el.textContent),
+                mediumRiskCount_duplicates: allMediumRisk.length,
+                mediumRiskCount_values: Array.from(allMediumRisk).map(el => el.textContent),
+                lowRiskCount_duplicates: allLowRisk.length,
+                lowRiskCount_values: Array.from(allLowRisk).map(el => el.textContent),
+                riskScoreValue_duplicates: allRiskScore.length,
+                riskScoreValue_values: Array.from(allRiskScore).map(el => el.textContent)
+            });
+            
+            // FORCE UPDATE ALL DUPLICATES (if any)
+            if (allHighRisk.length > 1) {
+                console.warn(`⚠️ Found ${allHighRisk.length} elements with id="highRiskCount"! Updating ALL...`);
+                allHighRisk.forEach(el => el.textContent = highRisk);
+            }
+            if (allMediumRisk.length > 1) {
+                console.warn(`⚠️ Found ${allMediumRisk.length} elements with id="mediumRiskCount"! Updating ALL...`);
+                allMediumRisk.forEach(el => el.textContent = mediumRisk);
+            }
+            if (allLowRisk.length > 1) {
+                console.warn(`⚠️ Found ${allLowRisk.length} elements with id="lowRiskCount"! Updating ALL...`);
+                allLowRisk.forEach(el => el.textContent = lowRisk);
+            }
+            if (allRiskScore.length > 1) {
+                console.warn(`⚠️ Found ${allRiskScore.length} elements with id="riskScoreValue"! Updating ALL...`);
+                allRiskScore.forEach(el => el.textContent = `${health.overall_health_score}/100`);
+            }
+        }
+
+        // Update risk factors list
+        function updateRiskFactors(risks) {
+            const container = document.getElementById('riskFactorsList');
+            
+            if (risks.length === 0) {
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #64748b;">
+                        <p style="font-size: 18px; margin-bottom: 8px;">🎉 No risks detected!</p>
+                        <p style="font-size: 14px;">Your project is on track with no identified risks.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by level priority
+            const levelPriority = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+            const sortedRisks = [...risks].sort((a, b) => 
+                (levelPriority[a.level] || 9) - (levelPriority[b.level] || 9)
+            );
+
+            const html = sortedRisks.map(risk => `
+                <div class="risk-factor-item">
+                    <div class="risk-factor-header">
+                        <div class="risk-factor-title">${risk.title}</div>
+                        <span class="risk-badge ${risk.level.toLowerCase()}">${risk.level}</span>
+                    </div>
+                    <div class="risk-factor-description">${risk.description}</div>
+                    <div class="risk-factor-meta">
+                        Category: ${risk.category} | Impact: ${risk.impact} | Affected: ${risk.affected_count} item(s)
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // Update trends chart
+        function updateTrendsChart(trendsData) {
+            const canvas = document.getElementById('riskTrendChart');
+            if (!canvas) return;
+
+            const labels = trendsData.map(d => d.week);
+            const criticalData = trendsData.map(d => d.critical);
+            const highData = trendsData.map(d => d.high);
+            const mediumData = trendsData.map(d => d.medium);
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Critical',
+                            data: criticalData,
+                            borderColor: '#ef4444',
+                            backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#ef4444',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'High',
+                            data: highData,
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.15)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#f97316',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        },
+                        {
+                            label: 'Medium',
+                            data: mediumData,
+                            borderColor: '#eab308',
+                            backgroundColor: 'rgba(234, 179, 8, 0.15)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#eab308',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update category chart
+        function updateCategoryChart(risks) {
+            const canvas = document.getElementById('riskCategoryChart');
+            if (!canvas) return;
+
+            const byCategory = {};
+            risks.forEach(risk => {
+                const category = risk.category || 'Other';
+                const affectedCount = risk.affected_count || 1;
+                byCategory[category] = (byCategory[category] || 0) + affectedCount;
+            });
+
+            const labels = Object.keys(byCategory);
+            const data = Object.values(byCategory);
+            const colors = [
+                '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
+                '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#84cc16'
+            ];
+
+            if (categoryChart) {
+                categoryChart.destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            categoryChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, labels.length)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'right'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Update impact chart
+        function updateImpactChart(risks) {
+            const canvas = document.getElementById('riskImpactChart');
+            if (!canvas) return;
+
+            const byImpact = {
+                CRITICAL: 0,
+                HIGH: 0,
+                MEDIUM: 0,
+                LOW: 0,
+                NEGLIGIBLE: 0
+            };
+
+            risks.forEach(risk => {
+                const impact = (risk.impact || 'LOW').toUpperCase();
+                const affectedCount = risk.affected_count || 1;
+                if (byImpact[impact] !== undefined) {
+                    byImpact[impact] += affectedCount;
+                }
+            });
+
+            const labels = Object.keys(byImpact).filter(k => byImpact[k] > 0);
+            const data = labels.map(k => byImpact[k]);
+            const colors = {
+                CRITICAL: '#dc2626',
+                HIGH: '#ea580c',
+                MEDIUM: '#d97706',
+                LOW: '#16a34a',
+                NEGLIGIBLE: '#06b6d4'
+            };
+
+            if (impactChart) {
+                impactChart.destroy();
+            }
+
+            const ctx = canvas.getContext('2d');
+            impactChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Risks by Impact',
+                        data: data,
+                        backgroundColor: labels.map(l => colors[l])
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

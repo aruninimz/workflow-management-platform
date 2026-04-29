@@ -1,0 +1,522 @@
+/* ============================================
+   INSIGHTS & HEALTH MODULE - CUSTOM STYLES
+   Developer: Aruni
+   ============================================ */
+
+/* Insights Page Container */
+.insights-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Header Section */
+.insights-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.insights-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.insights-title-icon {
+    color: #8b5cf6;
+}
+
+.insights-subtitle {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+/* Health Score Card */
+.health-score-card {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0e7ff 100%);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    align-items: center;
+}
+
+.health-score-content {
+    text-align: left;
+}
+
+.health-score-label {
+    font-size: 0.875rem;
+    color: #6366f1;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.health-score-value {
+    font-size: 4rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+}
+
+.health-score-status {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 1rem;
+}
+
+.health-score-description {
+    color: #4b5563;
+    line-height: 1.6;
+}
+
+/* Key Metrics Grid */
+.key-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.metric-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    gap: 1rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.metric-card.completion .metric-icon {
+    background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+    color: #10b981;
+}
+
+.metric-card.velocity .metric-icon {
+    background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+    color: #3b82f6;
+}
+
+.metric-card.efficiency .metric-icon {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #f59e0b;
+}
+
+.metric-card.quality .metric-icon {
+    background: linear-gradient(135deg, #fce7f3, #fbcfe8);
+    color: #ec4899;
+}
+
+.metric-content {
+    flex: 1;
+}
+
+.metric-label {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.metric-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.metric-trend {
+    font-size: 0.75rem;
+    margin-top: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.metric-trend.positive { color: #10b981; }
+.metric-trend.negative { color: #ef4444; }
+.metric-trend.neutral { color: #6b7280; }
+
+/* Analytics Grid */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.analytics-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-card.large {
+    grid-column: span 2;
+}
+
+.analytics-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 1rem;
+}
+
+/* Performance Section */
+.performance-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.performance-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.performance-card {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.performance-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.performance-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.performance-score {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #3b82f6;
+}
+
+.performance-bar {
+    height: 8px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.performance-fill {
+    height: 100%;
+    background: #10b981;
+    border-radius: 9999px;
+    transition: width 0.3s ease;
+}
+
+.performance-description {
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+/* Insights Section */
+.insights-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.insights-list {
+    display: grid;
+    gap: 1rem;
+    margin-top: 1.5rem;
+}
+
+.insight-card {
+    background: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1.25rem;
+    display: flex;
+    gap: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.insight-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+}
+
+.insight-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.125rem;
+    flex-shrink: 0;
+}
+
+.insight-positive .insight-icon {
+    background: #d1fae5;
+    color: #10b981;
+}
+
+.insight-warning .insight-icon {
+    background: #fef3c7;
+    color: #f59e0b;
+}
+
+.insight-info .insight-icon {
+    background: #dbeafe;
+    color: #3b82f6;
+}
+
+.insight-alert .insight-icon {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.insight-content {
+    flex: 1;
+}
+
+.insight-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 0.5rem;
+}
+
+.insight-description {
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+}
+
+.insight-action {
+    background: #eff6ff;
+    border-left: 3px solid #3b82f6;
+    padding: 0.625rem 0.875rem;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #1e40af;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Performers Section */
+.performers-section {
+    margin-bottom: 2rem;
+}
+
+.performers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 1.5rem;
+}
+
+.performers-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.performers-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.performers-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.performer-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.performer-item:last-child {
+    border-bottom: none;
+}
+
+.performer-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.performer-name {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #1a202c;
+}
+
+.performer-progress {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #10b981;
+}
+
+.performer-bar {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+.performer-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #10b981, #059669);
+    border-radius: 9999px;
+}
+
+.attention-item {
+    padding: 1rem;
+    border-radius: 8px;
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.attention-item:last-child {
+    margin-bottom: 0;
+}
+
+.attention-item.severity-high {
+    background: #fef2f2;
+    border-left: 3px solid #ef4444;
+}
+
+.attention-item.severity-medium {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+}
+
+.attention-icon {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.attention-item.severity-high .attention-icon {
+    background: #fee2e2;
+    color: #ef4444;
+}
+
+.attention-item.severity-medium .attention-icon {
+    background: #fef3c7;
+    color: #f59e0b;
+}
+
+.attention-content {
+    flex: 1;
+}
+
+.attention-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 0.25rem;
+}
+
+.attention-description {
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .analytics-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .analytics-card.large {
+        grid-column: span 1;
+    }
+
+    .performers-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .insights-container {
+        padding: 1rem;
+    }
+
+    .insights-title {
+        font-size: 1.5rem;
+    }
+
+    .health-score-card {
+        grid-template-columns: 1fr;
+    }
+
+    .health-score-value {
+        font-size: 3rem;
+    }
+
+    .key-metrics-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 480px) {
+    .key-metrics-grid {
+        grid-template-columns: 1fr;
+    }
+}
